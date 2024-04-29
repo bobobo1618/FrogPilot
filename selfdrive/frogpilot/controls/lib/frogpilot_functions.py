@@ -12,6 +12,8 @@ from openpilot.common.params import Params
 from openpilot.system.hardware import HARDWARE
 from openpilot.system.version import get_short_branch, get_commit_date
 
+from openpilot.selfdrive.frogpilot.controls.lib.model_manager import MODELS_PATH
+
 CITY_SPEED_LIMIT = 25  # 55mph is typically the minimum speed for highways
 CRUISING_SPEED = 5     # Roughly the speed cars go when not touching the gas while in drive
 PROBABILITY = 0.6      # 60% chance of condition being true
@@ -137,6 +139,8 @@ class FrogPilotFunctions:
     if not filecmp.cmp(frogpilot_boot_logo, boot_logo_location, shallow=False):
       copy_cmd = ['sudo', 'cp', frogpilot_boot_logo, boot_logo_location]
       cls.run_cmd(copy_cmd, "Successfully replaced bg.jpg with frogpilot_boot_logo.png.", "Failed to replace boot logo")
+
+    os.makedirs(MODELS_PATH, exist_ok=True)
 
   @classmethod
   def uninstall_frogpilot(cls):
