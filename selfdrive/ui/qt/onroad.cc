@@ -506,11 +506,13 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
   QMovie *gif = wheelImagesGif[wheelIconGif];
 
   QColor background_color = wheelIcon != 0 && !isDown() && engageable ?
+    (paramsMemory.getBool("EcoGearOn") ? QColor(0, 255, 25, 255) :
+    (paramsMemory.getBool("SportGearOn") ? QColor(250, 0, 25, 255) :
     (scene.always_on_lateral_active ? QColor(10, 186, 181, 255) :
     (scene.conditional_status == 1 || scene.conditional_status == 3 || scene.conditional_status == 5 ? QColor(255, 246, 0, 255) :
     (experimental_mode ? QColor(218, 111, 37, 241) :
     (scene.traffic_mode_active ? QColor(201, 34, 49, 255) :
-    (scene.navigate_on_openpilot ? QColor(49, 161, 238, 255) : QColor(0, 0, 0, 166)))))) :
+    (scene.navigate_on_openpilot ? QColor(49, 161, 238, 255) : QColor(0, 0, 0, 166)))))))) :
     QColor(0, 0, 0, 166);
 
   if (!(scene.map_open && scene.big_map)) {

@@ -222,6 +222,9 @@ class CarState(CarStateBase):
     self.cruise_decreased = self.pcm_acc_status == 10
     self.cruise_increased = self.pcm_acc_status == 9
 
+    self.params_memory.put_bool("EcoGearOn", cp.vl["GEAR_PACKET"]['ECON_ON'])
+    self.params_memory.put_bool("SportGearOn", cp.vl["GEAR_PACKET"]['SPORT_ON_2'])
+
     self.pcm_accel_net = cp.vl["PCM_CRUISE"]["ACCEL_NET"]
     self.pcm_neutral_force = cp.vl["PCM_CRUISE"]["NEUTRAL_FORCE"]
 

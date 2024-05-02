@@ -81,9 +81,9 @@ class FrogPilotPlanner:
     v_ego = max(carState.vEgo, 0)
     v_lead = self.lead_one.vLead
 
-    if self.acceleration_profile == 1:
+    if self.acceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn"):
       self.max_accel = get_max_accel_eco(v_ego)
-    elif self.acceleration_profile in (2, 3):
+    elif self.acceleration_profile in (2, 3) or self.params_memory.get_bool("SportGearOn"):
       self.max_accel = get_max_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.max_accel = get_max_accel(v_ego)
@@ -92,9 +92,9 @@ class FrogPilotPlanner:
 
     v_cruise_changed = (self.mtsc_target or self.vtsc_target) < v_cruise
 
-    if self.deceleration_profile == 1 and not v_cruise_changed:
+    if (self.deceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn")) and not v_cruise_changed:
       self.min_accel = get_min_accel_eco(v_ego)
-    elif self.deceleration_profile == 2 and not v_cruise_changed:
+    elif (self.deceleration_profile == 2 or self.params_memory.get_bool("SportGearOn")) and not v_cruise_changed:
       self.min_accel = get_min_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.min_accel = A_CRUISE_MIN
