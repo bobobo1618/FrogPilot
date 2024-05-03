@@ -117,6 +117,7 @@ typedef enum UIStatus {
   // FrogPilot statuses
   STATUS_ALWAYS_ON_LATERAL_ACTIVE,
   STATUS_TRAFFIC_MODE_ACTIVE,
+  STATUS_TURN_SIGNAL_ACTIVE,
 
 } UIStatus;
 
@@ -138,6 +139,7 @@ const QColor bg_colors [] = {
   // FrogPilot colors
   [STATUS_ALWAYS_ON_LATERAL_ACTIVE] = QColor(0x0a, 0xba, 0xb5, 0xf1),
   [STATUS_TRAFFIC_MODE_ACTIVE] = QColor(0xc9, 0x22, 0x31, 0xf1),
+  [STATUS_TURN_SIGNAL_ACTIVE] = QColor(0xff, 0xff, 0x00, 0xf1),
 };
 
 static std::map<cereal::ControlsState::AlertStatus, QColor> alert_colors = {
@@ -209,6 +211,12 @@ typedef struct UIScene {
   bool hide_speed;
   bool hide_speed_ui;
   bool holiday_themes;
+  bool is_CPU;
+  bool is_GPU;
+  bool is_IP;
+  bool is_memory;
+  bool is_storage_left;
+  bool is_storage_used;
   bool lead_info;
   bool live_valid;
   bool map_open;
@@ -227,11 +235,15 @@ typedef struct UIScene {
   bool rotating_wheel;
   bool screen_recorder;
   bool show_aol_status_bar;
+  bool show_blind_spot;
   bool show_cem_status_bar;
   bool show_jerk;
+  bool show_signal;
   bool show_slc_offset;
   bool show_slc_offset_ui;
+  bool show_steering;
   bool show_tuning;
+  bool sidebar_metrics;
   bool speed_limit_changed;
   bool speed_limit_controller;
   bool speed_limit_overridden;
@@ -265,6 +277,7 @@ typedef struct UIScene {
   float path_edge_width;
   float path_width;
   float road_edge_width;
+  float steer;
   float speed_limit;
   float speed_limit_offset;
   float speed_limit_overridden_speed;

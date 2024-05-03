@@ -108,7 +108,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
     {"QOLControls", tr("Quality of Life"), tr("Miscellaneous quality of life changes to improve your overall openpilot experience."), "../frogpilot/assets/toggle_icons/quality_of_life.png"},
     {"CustomCruise", tr("Cruise Increase Interval"), tr("Set a custom interval to increase the max set speed by."), ""},
     {"CustomCruiseLong", tr("Cruise Increase Interval (Long Press)"), tr("Set a custom interval to increase the max set speed by when holding down the cruise increase button."), ""},
-    {"MapGears", tr("Map Acceleration/Deceleration To Gears"), tr("Map your acceleration/deceleration profile to your 'Eco' and/or 'Sport' gears."), ""},
+    {"MapGears", tr("Map Acceleration To Gears"), tr("Map your acceleration/deceleration profile to your 'Eco' and/or 'Sport' gears."), ""},
     {"OnroadDistanceButton", tr("Onroad Distance Button"), tr("Simulate a distance button via the onroad UI to control personalities, 'Experimental Mode', and 'Traffic Mode'."), ""},
     {"PauseLateralSpeed", tr("Pause Lateral Below"), tr("Pause lateral control on all speeds below the set speed."), ""},
     {"ReverseCruise", tr("Reverse Cruise Increase"), tr("Reverses the 'long press' functionality logic to increase the max set speed by 5 instead of 1. Useful to increase the max speed quickly."), ""},
@@ -560,8 +560,8 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
           int modelIndex = modelLabels.indexOf(modelToSelect);
           if (modelIndex != -1) {
             QString selectedModel = availableModels.at(modelIndex);
-            params.put("Model", selectedModel.toStdString());
-            params.put("ModelName", modelToSelect.toStdString());
+            params.putNonBlocking("Model", selectedModel.toStdString());
+            params.putNonBlocking("ModelName", modelToSelect.toStdString());
           }
 
           if (FrogPilotConfirmationDialog::yesorno(tr("Do you want to start with a fresh calibration for the newly selected model?"), this)) {
@@ -748,7 +748,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
 
           if (selection.isEmpty()) break;
 
-          params.put(priorityKey.toStdString(), selection.toStdString());
+          params.putNonBlocking(priorityKey.toStdString(), selection.toStdString());
           selectedPriorities.append(selection);
 
           if (selection == tr("Lowest") || selection == tr("Highest") || selection == tr("None")) break;
@@ -851,8 +851,8 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
   steerRatioToggle = static_cast<FrogPilotParamValueToggleControl*>(toggles["SteerRatio"]);
 
   QObject::connect(steerRatioToggle, &FrogPilotParamValueToggleControl::buttonClicked, this, [this]() {
-    params.putFloat("SteerRatio", steerRatioStock);
-    params.putBool("ResetSteerRatio", false);
+    params.putFloatNonBlocking("SteerRatio", steerRatioStock);
+    params.putBoolNonBlocking("ResetSteerRatio", false);
     update();
   });
 

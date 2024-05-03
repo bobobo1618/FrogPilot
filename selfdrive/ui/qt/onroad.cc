@@ -240,8 +240,95 @@ void OnroadWindow::primeChanged(bool prime) {
 }
 
 void OnroadWindow::paintEvent(QPaintEvent *event) {
+  UIState *s = uiState();
+  SubMaster &sm = *(s->sm);
+
   QPainter p(this);
-  p.fillRect(rect(), QColor(bg.red(), bg.green(), bg.blue(), 255));
+  QRect rect = this->rect();
+
+  p.fillRect(rect, QColor(bg.red(), bg.green(), bg.blue(), 255));
+
+  if (scene.show_steering) {
+    QLinearGradient gradient(rect.topLeft(), rect.bottomLeft());
+    gradient.setColorAt(0.0, QColor(201, 34, 49, 255));
+    gradient.setColorAt(0.25, QColor(218, 111, 37, 241));
+    gradient.setColorAt(0.5, QColor(255, 246, 0, 255));
+    gradient.setColorAt(0.75, QColor(23, 134, 68, 242));
+    gradient.setColorAt(1.0, QColor(23, 134, 68, 242));
+
+    QBrush brush(gradient);
+    int fillWidth = UI_BORDER_SIZE;
+
+    steer = 0.10 * scene.steer + 0.90 * steer;
+    int visibleHeight = rect.height() * steer;
+
+    if (scene.steering_angle_deg > 0) {
+      QRect leftRect(rect.x(), rect.y() + rect.height() - visibleHeight, fillWidth, visibleHeight);
+      p.fillRect(leftRect, brush);
+      QRect leftRectHidden(rect.x(), rect.y(), fillWidth, rect.height() - visibleHeight);
+      p.fillRect(leftRectHidden, QColor(bg.red(), bg.green(), bg.blue(), 255));
+    } else if (scene.steering_angle_deg < 0) {
+      QRect rightRect(rect.x() + rect.width() - fillWidth, rect.y() + rect.height() - visibleHeight, fillWidth, visibleHeight);
+      p.fillRect(rightRect, brush);
+      QRect rightRectHidden(rect.x() + rect.width() - fillWidth, rect.y(), fillWidth, rect.height() - visibleHeight);
+      p.fillRect(rightRectHidden, QColor(bg.red(), bg.green(), bg.blue(), 255));
+    }
+  }
+
+  if (scene.show_blind_spot) {
+    static int blindspot_frames = 0;
+    QColor blindspot_border_color;
+
+    if (scene.blind_spot_left || scene.blind_spot_right) {
+      if (sm.frame % 10 == 0) {
+        blindspot_border_color = bg_colors[STATUS_TRAFFIC_MODE_ACTIVE];
+        blindspot_frames = 5;
+      } else if (blindspot_frames > 0) {
+        blindspot_border_color = bg_colors[STATUS_TRAFFIC_MODE_ACTIVE];
+        blindspot_frames--;
+      } else {
+        blindspot_border_color = bg;
+      }
+
+      if (scene.blind_spot_left) {
+        QRect leftHalf(rect.x(), rect.y(), rect.width() / 2, rect.height());
+        p.fillRect(leftHalf, QColor(blindspot_border_color.red(), blindspot_border_color.green(), blindspot_border_color.blue(), 255));
+      }
+      if (scene.blind_spot_right) {
+        QRect rightHalf(rect.x() + rect.width() / 2, rect.y(), rect.width() / 2, rect.height());
+        p.fillRect(rightHalf, QColor(blindspot_border_color.red(), blindspot_border_color.green(), blindspot_border_color.blue(), 255));
+      }
+    } else {
+      blindspot_frames = 0;
+    }
+  }
+
+  if (scene.show_signal) {
+    static int signal_frames = 0;
+    QColor signal_border_color;
+
+    if (scene.turn_signal_left || scene.turn_signal_right) {
+      if (sm.frame % 20 == 0) {
+        signal_border_color = bg_colors[STATUS_TURN_SIGNAL_ACTIVE];
+        signal_frames = 10;
+      } else if (signal_frames > 0) {
+        signal_border_color = bg_colors[STATUS_TURN_SIGNAL_ACTIVE];
+        signal_frames--;
+      } else {
+        signal_border_color = bg;
+      }
+
+      if (scene.turn_signal_left) {
+        QRect leftHalf(rect.x(), rect.y(), rect.width() / 2, rect.height());
+        p.fillRect(leftHalf, QColor(signal_border_color.red(), signal_border_color.green(), signal_border_color.blue(), 255));
+      } else if (scene.turn_signal_right) {
+        QRect rightHalf(rect.x() + rect.width() / 2, rect.y(), rect.width() / 2, rect.height());
+        p.fillRect(rightHalf, QColor(signal_border_color.red(), signal_border_color.green(), signal_border_color.blue(), 255));
+      }
+    } else {
+      signal_frames = 0;
+    }
+  }
 
   if (scene.fps_counter) {
     qint64 currentMillis = QDateTime::currentMSecsSinceEpoch();
@@ -279,10 +366,9 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
     p.setRenderHint(QPainter::TextAntialiasing);
     p.setPen(Qt::white);
 
-    QRect currentRect = rect();
     int textWidth = p.fontMetrics().horizontalAdvance(fpsDisplayString);
-    int xPos = (currentRect.width() - textWidth) / 2;
-    int yPos = currentRect.bottom() - 5;
+    int xPos = (rect.width() - textWidth) / 2;
+    int yPos = rect.bottom() - 5;
 
     p.drawText(xPos, yPos, fpsDisplayString);
 
@@ -291,12 +377,12 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
 
   QString logicsDisplayString = QString();
   if (scene.show_jerk) {
-    logicsDisplayString += QString("Acceleration Jerk: %1 (%2%3) | Speed Jerk: %4 (%5%6) | ")
+    logicsDisplayString += QString("Acceleration Jerk: %1 (%2%3) | Pedal Jerk: %4 (%5%6) | ")
       .arg(scene.acceleration_jerk, 0, 'f', 3)
-      .arg(scene.acceleration_jerk_difference > 0 ? "-" : "+", 0)
+      .arg(scene.acceleration_jerk_difference > 0 ? "-" : "", 0)
       .arg(scene.acceleration_jerk_difference, 0, 'f', 3)
       .arg(scene.ego_jerk, 0, 'f', 3)
-      .arg(scene.ego_jerk_difference > 0 ? "-" : "+", 0)
+      .arg(scene.ego_jerk_difference > 0 ? "-" : "", 0)
       .arg(scene.ego_jerk_difference, 0, 'f', 3);
   }
   if (scene.show_tuning) {
@@ -317,10 +403,9 @@ void OnroadWindow::paintEvent(QPaintEvent *event) {
     p.setRenderHint(QPainter::TextAntialiasing);
     p.setPen(Qt::white);
 
-    QRect currentRect = rect();
     int logicsWidth = p.fontMetrics().horizontalAdvance(logicsDisplayString);
-    int logicsX = (currentRect.width() - logicsWidth) / 2;
-    int logicsY = currentRect.top() + 27;
+    int logicsX = (rect.width() - logicsWidth) / 2;
+    int logicsY = rect.top() + 27;
 
     p.drawText(logicsX, logicsY, logicsDisplayString);
     update();
@@ -501,13 +586,11 @@ void ExperimentalButton::paintEvent(QPaintEvent *event) {
   QMovie *gif = wheelImagesGif[wheelIconGif];
 
   QColor background_color = wheelIcon != 0 && !isDown() && engageable ?
-    (paramsMemory.getBool("EcoGearOn") ? QColor(0, 255, 25, 255) :
-    (paramsMemory.getBool("SportGearOn") ? QColor(250, 0, 25, 255) :
     (scene.always_on_lateral_active ? QColor(10, 186, 181, 255) :
     (scene.conditional_status == 1 || scene.conditional_status == 3 || scene.conditional_status == 5 ? QColor(255, 246, 0, 255) :
     (experimental_mode ? QColor(218, 111, 37, 241) :
     (scene.traffic_mode_active ? QColor(201, 34, 49, 255) :
-    (scene.navigate_on_openpilot ? QColor(49, 161, 238, 255) : QColor(0, 0, 0, 166)))))))) :
+    (scene.navigate_on_openpilot ? QColor(49, 161, 238, 255) : QColor(0, 0, 0, 166)))))) :
     QColor(0, 0, 0, 166);
 
   if (!(scene.map_open && scene.big_map)) {
@@ -958,7 +1041,7 @@ void AnnotatedCameraWidget::drawLaneLines(QPainter &painter, const UIState *s) {
   painter.setBrush(pe);
   painter.drawPath(path);
 
-  // Paint blindspot path
+  // Paint blind spot path
   if (scene.blind_spot_path) {
     QLinearGradient bs(0, height(), 0, 0);
     bs.setColorAt(0.0, QColor::fromHslF(0 / 360., 0.75, 0.50, 0.6));

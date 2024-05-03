@@ -223,6 +223,10 @@ static void update_state(UIState *s) {
   } else if ((s->sm->frame - s->sm->rcv_frame("pandaStates")) > 5*UI_FREQ) {
     scene.pandaType = cereal::PandaState::PandaType::UNKNOWN;
   }
+  if (sm.updated("carControl")) {
+    auto carControl = sm["carControl"].getCarControl();
+    scene.steer = carControl.getActuators().getSteer();
+  }
   if (sm.updated("carParams")) {
     scene.longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
     ui_update_frogpilot_params(s);
@@ -313,7 +317,6 @@ void ui_update_frogpilot_params(UIState *s) {
   UIScene &scene = s->scene;
 
   std::string branch = params.get("GitBranch");
-  bool isRelease = branch == "FrogPilot";
 
   bool always_on_lateral = params.getBool("AlwaysOnLateral");
   scene.show_aol_status_bar = always_on_lateral && !params.getBool("HideAOLStatusBar");
@@ -325,20 +328,16 @@ void ui_update_frogpilot_params(UIState *s) {
 
   bool custom_onroad_ui = params.getBool("CustomUI");
   bool custom_paths = custom_onroad_ui && params.getBool("CustomPaths");
-  bool developer_ui = !isRelease && custom_onroad_ui && params.getBool("DeveloperUI");
   scene.acceleration_path = custom_paths && params.getBool("AccelerationPath");
   scene.adjacent_path = custom_paths && params.getBool("AdjacentPath");
   scene.adjacent_path_metrics = scene.adjacent_path && params.getBool("AdjacentPathMetrics");
   scene.blind_spot_path = custom_paths && params.getBool("BlindSpotPath");
   scene.compass = custom_onroad_ui && params.getBool("Compass");
   scene.fps_counter = custom_onroad_ui && params.getBool("FPSCounter");
-  scene.lead_info = scene.longitudinal_control && custom_onroad_ui && params.getBool("LeadInfo");
+  scene.lead_info = scene.longitudinal_control && custom_onroad_ui && params.getBool("LongitudinalMetrics");
   scene.pedals_on_ui = custom_onroad_ui && params.getBool("PedalsOnUI");
   scene.road_name_ui = custom_onroad_ui && params.getBool("RoadNameUI");
   scene.rotating_wheel = custom_onroad_ui && params.getBool("RotatingWheel");
-  scene.show_jerk = scene.longitudinal_control && developer_ui && params.getBool("ShowJerk");
-  scene.show_tuning = scene.has_auto_tune && developer_ui && !(params.getBool("LateralTune") && params.getBool("NNFF")) && params.getBool("ShowTuning");
-  scene.use_si = (scene.lead_info || developer_ui) && params.getBool("UseSI");
   scene.wheel_icon = custom_onroad_ui ? params.getInt("WheelIcon") : 0;
 
   bool custom_theme = params.getBool("CustomTheme");
@@ -347,6 +346,22 @@ void ui_update_frogpilot_params(UIState *s) {
   scene.custom_signals = custom_theme ? params.getInt("CustomSignals") : 0;
   scene.holiday_themes = custom_theme && params.getBool("HolidayThemes");
   scene.random_events = custom_theme && params.getBool("RandomEvents");
+
+  bool developer_ui = params.getBool("DeveloperUI");
+  bool border_metrics = developer_ui && params.getBool("BorderMetrics");
+  scene.sidebar_metrics = developer_ui && params.getBool("SidebarMetrics");
+  scene.is_CPU = scene.sidebar_metrics && params.getBool("ShowCPU");
+  scene.is_GPU = scene.sidebar_metrics && params.getBool("ShowGPU");
+  scene.is_IP = scene.sidebar_metrics && params.getBool("ShowIP");
+  scene.is_memory = scene.sidebar_metrics && params.getBool("ShowMemoryUsage");
+  scene.is_storage_left = scene.sidebar_metrics && params.getBool("ShowStorageLeft");
+  scene.is_storage_used = scene.sidebar_metrics && params.getBool("ShowStorageUsed");
+  scene.show_blind_spot = border_metrics && params.getBool("BlindSpotMetrics");
+  scene.show_jerk = scene.longitudinal_control && developer_ui && params.getBool("LongitudinalMetrics");
+  scene.show_signal = border_metrics && params.getBool("SignalMetrics");
+  scene.show_steering = border_metrics && params.getBool("ShowSteering");
+  scene.show_tuning = scene.has_auto_tune && developer_ui && !(params.getBool("LateralTune") && params.getBool("NNFF")) && params.getBool("LateralMetrics");
+  scene.use_si = developer_ui && params.getBool("UseSI");
 
   scene.disable_smoothing_mtsc = params.getBool("MTSCEnabled") && params.getBool("DisableMTSCSmoothing");
   scene.disable_smoothing_vtsc = params.getBool("VisionTurnControl") && params.getBool("DisableVTSCSmoothing");
@@ -436,7 +451,7 @@ UIState::UIState(QObject *parent) : QObject(parent) {
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
     "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "liveTorqueParameters",
-    "frogpilotCarControl", "frogpilotDeviceState", "frogpilotPlan",
+    "frogpilotCarControl", "frogpilotDeviceState", "frogpilotPlan", "carControl",
   });
 
   Params params;

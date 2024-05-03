@@ -719,7 +719,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     ScrollView *panel_frame = new ScrollView(panel, this);
     panel_widget->addWidget(panel_frame);
 
-    if (name == tr("Controls")) {
+    if (name == tr("Controls") || name == tr("Visuals")) {
       QScrollBar *scrollbar = panel_frame->verticalScrollBar();
 
       QObject::connect(scrollbar, &QScrollBar::valueChanged, this, [this](int value) {

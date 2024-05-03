@@ -424,6 +424,7 @@ public:
         params.putBool(this->button_params[i].toStdString(), checked);
         button_group->button(i)->setChecked(checked);
         emit buttonClicked(checked);
+        emit buttonTypeClicked(i);
       });
 
       hlayout->insertWidget(hlayout->indexOf(&toggle) - 1, button);
@@ -463,6 +464,7 @@ public:
 
 signals:
   void buttonClicked(const bool checked);
+  void buttonTypeClicked(int i);
 
 private:
   std::string key;

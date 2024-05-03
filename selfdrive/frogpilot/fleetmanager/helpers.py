@@ -459,7 +459,7 @@ def get_all_toggle_values():
     "DragonPilotTune", "FrogsGoMooTune", "LockDoors", "SNGHack",
     "AlertVolumeControl", "DisengageVolume", "EngageVolume", "PromptVolume", "PromptDistractedVolume", "RefuseVolume", "WarningSoftVolume",
     "WarningImmediateVolume", "CustomAlerts", "GreenLightAlert", "LeadDepartingAlert", "LoudBlindspotAlert", "SpeedLimitChangedAlert", "CustomUI",
-    "Compass", "DeveloperUI", "ShowJerk", "LeadInfo", "ShowTuning", "UseSI", "FPSCounter", "CustomPaths", "AccelerationPath", "AdjacentPath", "BlindSpotPath",
+    "Compass", "DeveloperUI", "LongitudinalMetrics", "LateralMetrics", "UseSI", "FPSCounter", "CustomPaths", "AccelerationPath", "AdjacentPath", "BlindSpotPath",
     "AdjacentPathMetrics", "PedalsOnUI", "RoadNameUI", "WheelIcon", "RotatingWheel", "CustomTheme", "CustomColors", "CustomIcons", "CustomSignals", "CustomSounds",
     "GoatScream", "HolidayThemes", "RandomEvents", "ModelUI", "DynamicPathWidth", "HideLeadMarker", "LaneLinesWidth", "PathEdgeWidth", "PathWidth", "RoadEdgesWidth",
     "UnlimitedLength", "QOLVisuals", "BigMap", "FullMap", "CameraView", "DriverCamera", "HideSpeed", "HideSpeedUI", "MapStyle", "NumericalTemp", "Fahrenheit",

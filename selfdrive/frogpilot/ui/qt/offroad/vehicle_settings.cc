@@ -97,7 +97,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
   QObject::connect(disableOpenpilotLong, &ToggleControl::toggleFlipped, [=](bool state) {
     if (state) {
       if (FrogPilotConfirmationDialog::yesorno(tr("Are you sure you want to completely disable openpilot longitudinal control?"), this)) {
-        params.putBool("DisableOpenpilotLongitudinal", state);
+        params.putBoolNonBlocking("DisableOpenpilotLongitudinal", state);
         if (started) {
           if (FrogPilotConfirmationDialog::toggle(tr("Reboot required to take effect."), tr("Reboot Now"), this)) {
             Hardware::reboot();
@@ -105,7 +105,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
         }
       }
     } else {
-      params.putBool("DisableOpenpilotLongitudinal", state);
+      params.putBoolNonBlocking("DisableOpenpilotLongitudinal", state);
     }
     updateCarToggles();
   });
