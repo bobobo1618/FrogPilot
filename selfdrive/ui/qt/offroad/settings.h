@@ -68,9 +68,6 @@ private slots:
 
 private:
   Params params;
-
-  // FrogPilot variables
-  Params paramsMemory{"/dev/shm/params"};
 };
 
 class TogglesPanel : public ListWidget {

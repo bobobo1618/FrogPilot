@@ -156,9 +156,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
 
-    QObject::connect(toggle, &ToggleControl::toggleFlipped, [this]() {
-      updateToggles();
-    });
+    QObject::connect(toggle, &ToggleControl::toggleFlipped, &updateFrogPilotToggles);
 
     QObject::connect(toggle, &AbstractControl::showDescriptionEvent, [this]() {
       update();
@@ -199,14 +197,6 @@ void FrogPilotVehiclesPanel::updateState(const UIState &s) {
   if (!isVisible()) return;
 
   started = s.scene.started;
-}
-
-void FrogPilotVehiclesPanel::updateToggles() {
-  std::thread([this]() {
-    paramsMemory.putBool("FrogPilotTogglesUpdated", true);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    paramsMemory.putBool("FrogPilotTogglesUpdated", false);
-  }).detach();
 }
 
 void FrogPilotVehiclesPanel::updateCarToggles() {

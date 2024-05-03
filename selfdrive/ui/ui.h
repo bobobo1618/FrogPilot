@@ -18,6 +18,8 @@
 #include "selfdrive/ui/qt/network/wifi_manager.h"
 #include "system/hardware/hw.h"
 
+#include "selfdrive/frogpilot/ui/qt/widgets/frogpilot_controls.h"
+
 const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 

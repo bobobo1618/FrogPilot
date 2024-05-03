@@ -30,11 +30,15 @@ from openpilot.selfdrive.frogpilot.controls.lib.model_manager import DEFAULT_MOD
 
 def frogpilot_boot_functions(frogpilot_functions):
   try:
-    delete_deprecated_models()
-
     while not system_time_valid():
       print("Waiting for system time to become valid...")
       time.sleep(1)
+
+    try:
+      delete_deprecated_models()
+    except subprocess.CalledProcessError as e:
+      print(f"Failed to delete deprecated models. Error: {e}")
+      return
 
     try:
       frogpilot_functions.backup_frogpilot()
@@ -64,10 +68,6 @@ def manager_init(frogpilot_functions) -> None:
   params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
   if is_release_branch():
     params.clear_all(ParamKeyType.DEVELOPMENT_ONLY)
-
-  if not params.get_bool("CameraViewReset"):
-    params.remove("CameraView")
-    params.put_bool("CameraViewReset", True)
 
   default_params: list[tuple[str, str | bytes]] = [
     ("CarParamsPersistent", ""),
@@ -370,7 +370,7 @@ def manager_cleanup() -> None:
   cloudlog.info("everything is dead")
 
 
-def manager_thread(frogpilot_functions) -> None:
+def manager_thread() -> None:
   cloudlog.bind(daemon="manager")
   cloudlog.info("manager start")
   cloudlog.info({"environ": os.environ})
@@ -396,17 +396,14 @@ def manager_thread(frogpilot_functions) -> None:
   while True:
     sm.update(1000)
 
-    openpilot_crashed = os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
-    if openpilot_crashed:
-      frogpilot_functions.delete_logs()
-
     started = sm['deviceState'].started
 
     if started and not started_prev:
       params.clear_all(ParamKeyType.CLEAR_ON_ONROAD_TRANSITION)
 
-      if openpilot_crashed:
-        os.remove(os.path.join(sentry.CRASHES_DIR, 'error.txt'))
+      error_log = os.path.join(sentry.CRASHES_DIR, 'error.txt')
+      if os.path.isfile(error_log):
+        os.remove(error_log)
 
     elif not started and started_prev:
       params.clear_all(ParamKeyType.CLEAR_ON_OFFROAD_TRANSITION)
@@ -459,7 +456,7 @@ def main() -> None:
   signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(1))
 
   try:
-    manager_thread(frogpilot_functions)
+    manager_thread()
   except Exception:
     traceback.print_exc()
     sentry.capture_exception()

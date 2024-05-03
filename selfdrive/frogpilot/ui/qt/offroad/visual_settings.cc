@@ -23,7 +23,6 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : FrogPilot
     {"Compass", tr("Compass"), tr("Add a compass to the onroad UI."), ""},
     {"DeveloperUI", tr("Developer UI"), tr("Get various detailed information of what openpilot is doing behind the scenes."), ""},
     {"FPSCounter", tr("FPS Counter"), tr("Display the 'Frames Per Second' (FPS) of your onroad UI for monitoring system performance."), ""},
-    {"LeadInfo", tr("Lead Info and Logics"), tr("Get detailed information about the vehicle ahead, including speed and distance, and the logic behind your following distance."), ""},
     {"CustomPaths", tr("Paths"), tr("Show your projected acceleration on the driving path, detected adjacent lanes, or when a vehicle is detected in your blindspot."), ""},
     {"PedalsOnUI", tr("Pedals Being Pressed"), tr("Display the brake and gas pedals on the onroad UI below the steering wheel icon."), ""},
     {"RoadNameUI", tr("Road Name"), tr("Display the current road's name at the bottom of the screen. Sourced from OpenStreetMap."), ""},
@@ -133,12 +132,8 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : FrogPilot
         for (auto &[key, toggle] : toggles) {
           std::set<QString> modifiedCustomOnroadUIKeys = customOnroadUIKeys;
 
-          if (!hasOpenpilotLongitudinal && !hasAutoTune || isRelease) {
+          if (!hasOpenpilotLongitudinal && !hasAutoTune) {
             modifiedCustomOnroadUIKeys.erase("DeveloperUI");
-          }
-
-          if (!hasOpenpilotLongitudinal || !isRelease) {
-            modifiedCustomOnroadUIKeys.erase("LeadInfo");
           }
 
           toggle->setVisible(modifiedCustomOnroadUIKeys.find(key.c_str()) != modifiedCustomOnroadUIKeys.end());
@@ -149,10 +144,6 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : FrogPilot
       std::vector<QString> developerUIToggles{"LeadInfo", "ShowTuning", "ShowJerk", "UseSI"};
       std::vector<QString> developerUIToggleNames{tr("Lead Info"), tr("Live Tuning"), tr("Jerk"), tr("Use SI")};
       toggle = new FrogPilotParamToggleControl(param, title, desc, icon, developerUIToggles, developerUIToggleNames);
-    } else if (param == "LeadInfo") {
-      std::vector<QString> leadInfoToggles{"UseSI"};
-      std::vector<QString> leadInfoToggleNames{tr("Use SI Values")};
-      toggle = new FrogPilotParamToggleControl(param, title, desc, icon, leadInfoToggles, leadInfoToggleNames);
     } else if (param == "CustomPaths") {
       std::vector<QString> pathToggles{"AccelerationPath", "AdjacentPath", "BlindSpotPath", "AdjacentPathMetrics"};
       std::vector<QString> pathToggleNames{tr("Acceleration"), tr("Adjacent"), tr("Blind Spot"), tr("Metrics")};
@@ -232,7 +223,7 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : FrogPilot
           int selectedStyle = styleMap.key(selection);
           params.putInt("MapStyle", selectedStyle);
           mapStyleButton->setValue(selection);
-          updateToggles();
+          updateFrogPilotToggles();
         }
       });
 
@@ -274,17 +265,9 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(SettingsWindow *parent) : FrogPilot
     addItem(toggle);
     toggles[param.toStdString()] = toggle;
 
-    QObject::connect(toggle, &ToggleControl::toggleFlipped, [this]() {
-      updateToggles();
-    });
-
-    QObject::connect(static_cast<FrogPilotButtonParamControl*>(toggle), &FrogPilotButtonParamControl::buttonClicked, [this]() {
-      updateToggles();
-    });
-
-    QObject::connect(static_cast<FrogPilotParamValueControl*>(toggle), &FrogPilotParamValueControl::valueChanged, [this]() {
-      updateToggles();
-    });
+    QObject::connect(toggle, &ToggleControl::toggleFlipped, &updateFrogPilotToggles);
+    QObject::connect(static_cast<FrogPilotButtonParamControl*>(toggle), &FrogPilotButtonParamControl::buttonClicked, &updateFrogPilotToggles);
+    QObject::connect(static_cast<FrogPilotParamValueControl*>(toggle), &FrogPilotParamValueControl::valueChanged, &updateFrogPilotToggles);
 
     QObject::connect(toggle, &AbstractControl::showDescriptionEvent, [this]() {
       update();
@@ -311,14 +294,6 @@ void FrogPilotVisualsPanel::updateState(const UIState &s) {
   if (!isVisible()) return;
 
   started = s.scene.started;
-}
-
-void FrogPilotVisualsPanel::updateToggles() {
-  std::thread([this]() {
-    paramsMemory.putBool("FrogPilotTogglesUpdated", true);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    paramsMemory.putBool("FrogPilotTogglesUpdated", false);
-  }).detach();
 }
 
 void FrogPilotVisualsPanel::updateCarToggles() {
