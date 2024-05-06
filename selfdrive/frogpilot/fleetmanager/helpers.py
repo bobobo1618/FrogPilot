@@ -450,12 +450,12 @@ def get_all_toggle_values():
     "AggressiveAcceleration", "StoppingDistance", "LeadDetectionThreshold", "SmoothBraking", "SmoothBrakingFarLead", "SmoothBrakingJerk", "TrafficMode",
     "MTSCEnabled", "DisableMTSCSmoothing", "MTSCCurvatureCheck", "MTSCAggressiveness", "ModelSelector", "Model", "NudgelessLaneChange", "LaneChangeTime",
     "LaneDetectionWidth", "OneLaneChange", "LaneDetectionWidth", "QOLControls", "CustomCruise", "CustomCruiseLong", "DisableOnroadUploads", "HigherBitrate",
-    "OnroadDistanceButton", "KaofuiIcons", "PauseLateralSpeed", "PauseLateralOnSignal", "ReverseCruise", "SetSpeedOffset", "SpeedLimitController", "Offset1",
-    "Offset2", "Offset3", "Offset4", "SLCFallback", "SLCOverride", "SLCPriority", "SLCConfirmation", "SLCConfirmationLower", "SLCConfirmationHigher",
-    "ForceMPHDashboard", "SLCLookaheadHigher", "SLCLookaheadLower", "SetSpeedLimit", "ShowSLCOffset", "ShowSLCOffsetUI", "UseVienna", "VisionTurnControl",
-    "DisableVTSCSmoothing", "CurveSensitivity", "TurnAggressiveness",
-    "TurnAggressiveness", "ForceFingerprint", "DisableOpenpilotLongitudinal", "EVTable", "LongPitch", "GasRegenCmd", "CrosstrekTorque", "LockDoors", "StockTune",
-    "CydiaTune", "DragonPilotTune", "FrogsGoMooTune", "LockDoors", "SNGHack",
+    "MapAcceleration", "MapDeceleration", "OnroadDistanceButton", "KaofuiIcons", "PauseLateralSpeed", "PauseLateralOnSignal", "ReverseCruise", "SetSpeedOffset",
+    "SpeedLimitController", "Offset1", "Offset2", "Offset3", "Offset4", "SLCFallback", "SLCOverride", "SLCPriority", "SLCConfirmation", "SLCConfirmationLower",
+    "SLCConfirmationHigher", "ForceMPHDashboard", "SLCLookaheadHigher", "SLCLookaheadLower", "SetSpeedLimit", "ShowSLCOffset", "ShowSLCOffsetUI", "UseVienna",
+    "VisionTurnControl", "DisableVTSCSmoothing", "CurveSensitivity", "TurnAggressiveness",
+    "ForceFingerprint", "DisableOpenpilotLongitudinal", "EVTable", "LongPitch", "GasRegenCmd", "CrosstrekTorque", "LockDoors", "StockTune", "CydiaTune",
+    "DragonPilotTune", "FrogsGoMooTune", "LockDoors", "SNGHack",
     "AlertVolumeControl", "DisengageVolume", "EngageVolume", "PromptVolume", "PromptDistractedVolume", "RefuseVolume", "WarningSoftVolume",
     "WarningImmediateVolume", "CustomAlerts", "GreenLightAlert", "LeadDepartingAlert", "LoudBlindspotAlert", "SpeedLimitChangedAlert", "CustomUI",
     "Compass", "DeveloperUI", "ShowJerk", "LeadInfo", "ShowTuning", "UseSI", "FPSCounter", "CustomPaths", "AccelerationPath", "AdjacentPath", "BlindSpotPath",
@@ -464,7 +464,7 @@ def get_all_toggle_values():
     "UnlimitedLength", "QOLVisuals", "BigMap", "FullMap", "CameraView", "DriverCamera", "HideSpeed", "HideSpeedUI", "MapStyle", "NumericalTemp", "Fahrenheit",
     "WheelSpeed", "ScreenManagement", "HideUIElements", "HideAlerts", "HideMapIcon", "HideMaxSpeed", "ScreenBrightness", "ScreenBrightnessOnroad", "ScreenRecorder",
     "ScreenTimeout", "ScreenTimeoutOnroad", "StandbyMode",
-    "AutomaticUpdates", "ShowCPU", "ShowGPU", "ShowIP", "ShowMemoryUsage", "ShowStorageLeft", "ShowStorageUsed", "Sidebar", "TetheringEnabled"
+    "AutomaticUpdates", "ShowCPU", "ShowGPU", "ShowIP", "ShowMemoryUsage", "ShowStorageLeft", "ShowStorageUsed", "Sidebar", "TetheringEnabled",
   ]
 
   toggle_values = {}

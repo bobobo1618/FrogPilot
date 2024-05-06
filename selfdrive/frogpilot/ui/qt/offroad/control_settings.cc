@@ -109,6 +109,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
     {"CustomCruise", tr("Cruise Increase Interval"), tr("Set a custom interval to increase the max set speed by."), ""},
     {"CustomCruiseLong", tr("Cruise Increase Interval (Long Press)"), tr("Set a custom interval to increase the max set speed by when holding down the cruise increase button."), ""},
     {"DisableOnroadUploads", tr("Disable Onroad Uploads"), tr("Prevent uploads to comma connect unless you're offroad and connected to Wi-Fi."), ""},
+    {"MapGears", tr("Map Acceleration/Deceleration To Gears"), tr("Map your acceleration/deceleration profile to your 'Eco' and/or 'Sport' gears."), ""},
     {"OnroadDistanceButton", tr("Onroad Distance Button"), tr("Simulate a distance button via the onroad UI to control personalities, 'Experimental Mode', and 'Traffic Mode'."), ""},
     {"PauseLateralSpeed", tr("Pause Lateral Below"), tr("Pause lateral control on all speeds below the set speed."), ""},
     {"ReverseCruise", tr("Reverse Cruise Increase"), tr("Reverses the 'long press' functionality logic to increase the max set speed by 5 instead of 1. Useful to increase the max speed quickly."), ""},
@@ -594,6 +595,10 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
             modifiedQolKeys.erase("SetSpeedOffset");
           }
 
+          if (!isToyota) {
+            modifiedQolKeys.erase("MapGears");
+          }
+
           toggle->setVisible(modifiedQolKeys.find(key.c_str()) != modifiedQolKeys.end());
         }
       });
@@ -602,6 +607,10 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
       toggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 99, std::map<int, QString>(), this, false, tr(" mph"));
     } else if (param == "CustomCruiseLong") {
       toggle = new FrogPilotParamValueControl(param, title, desc, icon, 1, 99, std::map<int, QString>(), this, false, tr(" mph"));
+    } else if (param == "MapGears") {
+      std::vector<QString> mapGearsToggles{"MapAcceleration", "MapDeceleration"};
+      std::vector<QString> mapGearsToggleNames{tr("Acceleration"), tr("Deceleration")};
+      toggle = new FrogPilotParamToggleControl(param, title, desc, icon, mapGearsToggles, mapGearsToggleNames);
     } else if (param == "OnroadDistanceButton") {
       std::vector<QString> onroadDistanceToggles{"KaofuiIcons"};
       std::vector<QString> onroadDistanceToggleNames{tr("Kaofui's Icons")};

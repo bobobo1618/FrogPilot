@@ -85,18 +85,18 @@ class FrogPilotPlanner:
     v_ego = max(carState.vEgo, 0)
     v_lead = self.lead_one.vLead
 
-    if self.acceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn"):
+    if self.acceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn") and self.map_acceleration:
       self.max_accel = get_max_accel_eco(v_ego)
-    elif self.acceleration_profile in (2, 3) or self.params_memory.get_bool("SportGearOn"):
+    elif self.acceleration_profile in {2, 3} or self.params_memory.get_bool("SportGearOn") and self.map_acceleration:
       self.max_accel = get_max_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.max_accel = get_max_accel(v_ego)
     else:
       self.max_accel = ACCEL_MAX
 
-    if (self.deceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn")) and not v_cruise_changed:
+    if self.deceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn") and self.map_deceleration:
       self.min_accel = get_min_accel_eco(v_ego)
-    elif (self.deceleration_profile == 2 or self.params_memory.get_bool("SportGearOn")) and not v_cruise_changed:
+    elif self.deceleration_profile == 2 or self.params_memory.get_bool("SportGearOn") and self.map_deceleration:
       self.min_accel = get_min_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.min_accel = A_CRUISE_MIN
@@ -321,6 +321,10 @@ class FrogPilotPlanner:
     self.map_turn_speed_controller = self.CP.openpilotLongitudinalControl and self.params.get_bool("MTSCEnabled")
     self.mtsc_curvature_check = self.map_turn_speed_controller and self.params.get_bool("MTSCCurvatureCheck")
     self.params_memory.put_float("MapTargetLatA", 2 * (self.params.get_int("MTSCAggressiveness") / 100))
+
+    quality_of_life = self.params.get_bool("QOLControls")
+    self.map_acceleration = quality_of_life and self.params.get_bool("MapAcceleration")
+    self.map_deceleration = quality_of_life and self.params.get_bool("MapDeceleration")
 
     self.speed_limit_controller = self.CP.openpilotLongitudinalControl and self.params.get_bool("SpeedLimitController")
     self.speed_limit_confirmation = self.speed_limit_controller and self.params.get_bool("SLCConfirmation")

@@ -191,6 +191,8 @@ def manager_init(frogpilot_functions) -> None:
     ("LongPitch", "1"),
     ("LoudBlindspotAlert", "0"),
     ("LowVoltageShutdown", "11.8"),
+    ("MapAcceleration", "0"),
+    ("MapDeceleration", "0"),
     ("MapsSelected", ""),
     ("MapboxPublicKey", ""),
     ("MapboxSecretKey", ""),
