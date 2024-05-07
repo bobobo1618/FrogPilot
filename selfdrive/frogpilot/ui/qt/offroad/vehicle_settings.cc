@@ -119,6 +119,7 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
     {"CrosstrekTorque", tr("Subaru Crosstrek Torque Increase"), tr("Increases the maximum allowed torque for the Subaru Crosstrek."), ""},
 
     {"ToyotaDoors", tr("Automatically Lock/Unlock Doors"), tr("Automatically lock the doors when in drive and unlock when in park."), ""},
+    {"ClusterOffset", tr("Cluster Offset"), tr("Set the cluster offset openpilot uses to try and match the speed displayed on the dash."), ""},
     {"LongitudinalTune", tr("Longitudinal Tune"), tr("Use a custom Toyota longitudinal tune.\n\nCydia = More focused on TSS-P vehicles but works for all Toyotas\n\nDragonPilot = Focused on TSS2 vehicles\n\nFrogPilot = Takes the best of both worlds with some personal tweaks focused around FrogsGoMoo's 2019 Lexus ES 350"), ""},
     {"SNGHack", tr("Stop and Go Hack"), tr("Enable the 'Stop and Go' hack for vehicles without stock stop and go functionality."), ""},
   };
@@ -126,7 +127,15 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
   for (const auto &[param, title, desc, icon] : vehicleToggles) {
     ParamControl *toggle;
 
-    if (param == "LongitudinalTune") {
+    if (param == "ToyotaDoors") {
+      std::vector<QString> lockToggles{"LockDoors", "UnlockDoors"};
+      std::vector<QString> lockToggleNames{tr("Lock"), tr("Unlock")};
+      toggle = new FrogPilotParamToggleControl(param, title, desc, icon, lockToggles, lockToggleNames);
+
+    } else if (param == "ClusterOffset") {
+      toggle = new FrogPilotParamValueControl(param, title, desc, icon, 1.000, 1.050, std::map<int, QString>(), this, false, "x", 1, 0.001);
+
+    } else if (param == "LongitudinalTune") {
       std::vector<std::pair<QString, QString>> tuneOptions{
         {"StockTune", tr("Stock")},
         {"CydiaTune", tr("Cydia")},
@@ -142,11 +151,6 @@ FrogPilotVehiclesPanel::FrogPilotVehiclesPanel(SettingsWindow *parent) : FrogPil
           }
         }
       });
-
-    } else if (param == "ToyotaDoors") {
-      std::vector<QString> lockToggles{"LockDoors", "UnlockDoors"};
-      std::vector<QString> lockToggleNames{tr("Lock"), tr("Unlock")};
-      toggle = new FrogPilotParamToggleControl(param, title, desc, icon, lockToggles, lockToggleNames);
 
     } else {
       toggle = new ParamControl(param, title, desc, icon, this);

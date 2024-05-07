@@ -30,6 +30,8 @@ class FrogPilotVariables:
 
     toggles.always_on_lateral_pause_speed = self.params.get_int("PauseAOLOnBrake")
 
+    toggles.cluster_offset = self.params.get_float("ClusterOffset") if CP.carName == "toyota" else 1
+
     toggles.conditional_experimental_mode = CP.openpilotLongitudinalControl and self.params.get_bool("ConditionalExperimental")
     toggles.conditional_curves = toggles.conditional_experimental_mode and self.params.get_bool("CECurves")
     toggles.conditional_curves_lead = toggles.conditional_curves and self.params.get_bool("CECurvesLead")
