@@ -2,7 +2,7 @@ from collections import deque
 import copy
 import math
 
-from cereal import car
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -70,6 +70,7 @@ class CarState(CarStateBase):
       return self.update_canfd(cp, cp_cam, frogpilot_variables)
 
     ret = car.CarState.new_message()
+    fp_ret = custom.FrogPilotCarState.new_message()
     cp_cruise = cp_cam if self.CP.carFingerprint in CAMERA_SCC_CAR else cp
     self.is_metric = cp.vl["CLU11"]["CF_Clu_SPEED_UNIT"] == 0
     speed_conv = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
@@ -187,12 +188,13 @@ class CarState(CarStateBase):
       self.lkas_previously_enabled = self.lkas_enabled
       self.lkas_enabled = cp.vl["BCM_PO_11"]["LFA_Pressed"]
 
-    self.params_memory.put_float("CarSpeedLimit", self.calculate_speed_limit(cp, cp_cam) * speed_conv)
+    fp_ret.dashboardSpeedLimit = self.calculate_speed_limit(cp, cp_cam) * speed_conv
 
-    return ret
+    return ret, fp_ret
 
   def update_canfd(self, cp, cp_cam, frogpilot_variables):
     ret = car.CarState.new_message()
+    fp_ret = custom.FrogPilotCarState.new_message()
 
     self.is_metric = cp.vl["CRUISE_BUTTONS_ALT"]["DISTANCE_UNIT"] != 1
     speed_factor = CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
@@ -280,9 +282,9 @@ class CarState(CarStateBase):
     self.lkas_previously_enabled = self.lkas_enabled
     self.lkas_enabled = cp.vl[self.cruise_btns_msg_canfd]["LFA_BTN"]
 
-    self.params_memory.put_float("CarSpeedLimit", self.calculate_speed_limit(cp, cp_cam) * speed_factor)
+    fp_ret.dashboardSpeedLimit = self.calculate_speed_limit(cp, cp_cam) * speed_factor
 
-    return ret
+    return ret, fp_ret
 
   def get_can_parser(self, CP):
     if CP.carFingerprint in CANFD_CAR:

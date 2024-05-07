@@ -26,7 +26,7 @@ class CarD:
   def __init__(self, CI=None):
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates'])
-    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput'])
+    self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'frogpilotCarState'])
 
     self.can_rcv_timeout_counter = 0      # conseuctive timeout count
     self.can_rcv_cum_timeout_counter = 0  # cumulative timeout count
@@ -92,7 +92,7 @@ class CarD:
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
-    self.CS = self.CI.update(self.CC_prev, can_strs, frogpilot_variables)
+    self.CS, self.FPCS = self.CI.update(self.CC_prev, can_strs, frogpilot_variables)
 
     self.sm.update(0)
 
@@ -136,6 +136,12 @@ class CarD:
     if self.last_actuators is not None:
       co_send.carOutput.actuatorsOutput = self.last_actuators
     self.pm.send('carOutput', co_send)
+
+    # FrogPilot carState
+    fp_cs_send = messaging.new_message('frogpilotCarState')
+    fp_cs_send.valid = self.CS.canValid
+    fp_cs_send.frogpilotCarState = self.FPCS
+    self.pm.send('frogpilotCarState', fp_cs_send)
 
   def controls_update(self, CC: car.CarControl, frogpilot_variables):
     """control update loop, driven by carControl"""

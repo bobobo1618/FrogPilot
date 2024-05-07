@@ -1,6 +1,6 @@
 import copy
 
-from cereal import car
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import mean
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -77,6 +77,7 @@ class CarState(CarStateBase):
 
   def update(self, cp, cp_cam, frogpilot_variables):
     ret = car.CarState.new_message()
+    fp_ret = custom.FrogPilotCarState.new_message()
 
     ret.doorOpen = any([cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_FR"],
                         cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RL"], cp.vl["BODY_CONTROL_STATE"]["DOOR_OPEN_RR"]])
@@ -214,16 +215,16 @@ class CarState(CarStateBase):
       message_keys = ["LDA_ON_MESSAGE", "SET_ME_X02"]
       self.lkas_enabled = any(self.lkas_hud.get(key) == 1 for key in message_keys)
 
-    self.params_memory.put_float("CarSpeedLimit", self.calculate_speed_limit(cp_cam, frogpilot_variables))
-
     self.cruise_decreased_previously = self.cruise_decreased
     self.cruise_increased_previously = self.cruise_increased
 
     self.cruise_decreased = self.pcm_acc_status == 10
     self.cruise_increased = self.pcm_acc_status == 9
 
-    self.params_memory.put_bool("EcoGearOn", cp.vl["GEAR_PACKET"]['ECON_ON'])
-    self.params_memory.put_bool("SportGearOn", cp.vl["GEAR_PACKET"]['SPORT_ON_2'])
+    fp_ret.dashboardSpeedLimit = self.calculate_speed_limit(cp_cam, frogpilot_variables)
+
+    fp_ret.ecoGear = cp.vl["GEAR_PACKET"]['ECON_ON'] == 1
+    fp_ret.sportGear = cp.vl["GEAR_PACKET"]['SPORT_ON_2' if self.CP.flags & ToyotaFlags.NO_DSU else 'SPORT_ON'] == 1
 
     self.pcm_accel_net = cp.vl["PCM_CRUISE"]["ACCEL_NET"]
     self.pcm_neutral_force = cp.vl["PCM_CRUISE"]["NEUTRAL_FORCE"]
@@ -253,7 +254,7 @@ class CarState(CarStateBase):
         # Apply offset
         ret.steeringAngleDeg = new_steering_angle_deg
 
-    return ret
+    return ret, fp_ret
 
   @staticmethod
   def get_can_parser(CP):

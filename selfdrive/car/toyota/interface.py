@@ -207,7 +207,7 @@ class CarInterface(CarInterfaceBase):
 
   # returns a car.CarState
   def _update(self, c, frogpilot_variables):
-    ret = self.CS.update(self.cp, self.cp_cam, frogpilot_variables)
+    ret, fp_ret = self.CS.update(self.cp, self.cp_cam, frogpilot_variables)
 
     if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR) or (self.CP.flags & ToyotaFlags.SMART_DSU and not self.CP.flags & ToyotaFlags.RADAR_CAN_FILTER):
       ret.buttonEvents = [
@@ -241,7 +241,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.events = events.to_msg()
 
-    return ret
+    return ret, fp_ret
 
   # pass in a car.CarControl
   # to be called @ 100hz

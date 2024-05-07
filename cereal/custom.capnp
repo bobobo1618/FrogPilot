@@ -20,6 +20,10 @@ struct FrogPilotCarState @0xaedffd8f31e7b55d {
       lkas @0;
     }
   }
+
+  dashboardSpeedLimit @0 :Float32;
+  ecoGear @1 :Bool;
+  sportGear @2 :Bool;
 }
 
 struct FrogPilotDeviceState @0xf35cc4560bbf6ec2 {

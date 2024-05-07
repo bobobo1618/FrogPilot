@@ -259,7 +259,7 @@ class CarInterface(CarInterfaceBase):
 
   # returns a car.CarState
   def _update(self, c, frogpilot_variables):
-    ret = self.CS.update(self.cp, self.cp_cam, self.cp_body, frogpilot_variables)
+    ret, fp_ret = self.CS.update(self.cp, self.cp_cam, self.cp_body, frogpilot_variables)
 
     ret.buttonEvents = [
       *create_button_events(self.CS.cruise_buttons, self.CS.prev_cruise_buttons, BUTTONS_DICT),
@@ -289,7 +289,7 @@ class CarInterface(CarInterfaceBase):
 
     ret.events = events.to_msg()
 
-    return ret
+    return ret, fp_ret
 
   # pass in a car.CarControl
   # to be called @ 100hz

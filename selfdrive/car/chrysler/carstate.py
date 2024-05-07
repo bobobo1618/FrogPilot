@@ -1,4 +1,4 @@
-from cereal import car
+from cereal import car, custom
 from openpilot.common.conversions import Conversions as CV
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
@@ -27,6 +27,7 @@ class CarState(CarStateBase):
   def update(self, cp, cp_cam, frogpilot_variables):
 
     ret = car.CarState.new_message()
+    fp_ret = custom.FrogPilotCarState.new_message()
 
     self.prev_distance_button = self.distance_button
     self.distance_button = cp.vl["CRUISE_BUTTONS"]["ACC_Distance_Dec"]
@@ -107,7 +108,7 @@ class CarState(CarStateBase):
     else:
       self.lkas_enabled = cp.vl["TRACTION_BUTTON"]["TOGGLE_LKAS"] == 1
 
-    return ret
+    return ret, fp_ret
 
   @staticmethod
   def get_cruise_messages():

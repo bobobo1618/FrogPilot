@@ -31,8 +31,8 @@ class SpeedLimitController:
     self.lat = 0  # deg
     self.lon = 0  # deg
 
-  def update(self, v_ego):
-    self.car_speed_limit = self.get_param_memory("CarSpeedLimit")
+  def update(self, dashboardSpeedLimit, v_ego):
+    self.car_speed_limit = dashboardSpeedLimit
     self.write_map_state(v_ego)
     self.nav_speed_limit = self.get_param_memory("NavSpeedLimit")
 

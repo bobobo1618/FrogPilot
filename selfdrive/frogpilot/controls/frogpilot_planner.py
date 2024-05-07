@@ -2,7 +2,7 @@ import numpy as np
 
 import cereal.messaging as messaging
 
-from cereal import log
+from cereal import car, log
 
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import interp
@@ -22,6 +22,8 @@ from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_functions import CITY_
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
 from openpilot.selfdrive.frogpilot.controls.lib.map_turn_speed_controller import MapTurnSpeedController
 from openpilot.selfdrive.frogpilot.controls.lib.speed_limit_controller import SpeedLimitController
+
+GearShifter = car.CarState.GearShifter
 
 # Acceleration profiles - Credit goes to the DragonPilot team!
                  # MPH = [0., 18,  36,  63,  94]
@@ -74,7 +76,7 @@ class FrogPilotPlanner:
     self.t_follow = 0
     self.vtsc_target = 0
 
-  def update(self, carState, controlsState, frogpilotCarControl, frogpilotNavigation, liveLocationKalman, modelData, radarState):
+  def update(self, carState, controlsState, frogpilotCarControl, frogpilotCarState, frogpilotNavigation, liveLocationKalman, modelData, radarState):
     v_cruise_kph = min(controlsState.vCruise, V_CRUISE_UNSET)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
     v_cruise_changed = (self.mtsc_target or self.vtsc_target) < v_cruise
@@ -82,18 +84,21 @@ class FrogPilotPlanner:
     v_ego = max(carState.vEgo, 0)
     v_lead = self.lead_one.vLead
 
-    if FrogPilotToggles.acceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn") and FrogPilotToggles.map_acceleration:
+    eco_gear = carState.gearShifter == GearShifter.eco or frogpilotCarState.ecoGear
+    sport_gear = carState.gearShifter == GearShifter.sport or frogpilotCarState.sportGear
+
+    if FrogPilotToggles.acceleration_profile == 1 or eco_gear and FrogPilotToggles.map_acceleration:
       self.max_accel = get_max_accel_eco(v_ego)
-    elif FrogPilotToggles.acceleration_profile in {2, 3} or self.params_memory.get_bool("SportGearOn") and FrogPilotToggles.map_acceleration:
+    elif FrogPilotToggles.acceleration_profile in {2, 3} or sport_gear and FrogPilotToggles.map_acceleration:
       self.max_accel = get_max_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.max_accel = get_max_accel(v_ego)
     else:
       self.max_accel = ACCEL_MAX
 
-    if FrogPilotToggles.deceleration_profile == 1 or self.params_memory.get_bool("EcoGearOn") and FrogPilotToggles.map_deceleration:
+    if FrogPilotToggles.deceleration_profile == 1 or eco_gear and FrogPilotToggles.map_deceleration:
       self.min_accel = get_min_accel_eco(v_ego)
-    elif FrogPilotToggles.deceleration_profile == 2 or self.params_memory.get_bool("SportGearOn") and FrogPilotToggles.map_deceleration:
+    elif FrogPilotToggles.deceleration_profile == 2 or sport_gear and FrogPilotToggles.map_deceleration:
       self.min_accel = get_min_accel_sport(v_ego)
     elif not controlsState.experimentalMode:
       self.min_accel = A_CRUISE_MIN
@@ -140,7 +145,7 @@ class FrogPilotPlanner:
 
     self.road_curvature = calculate_road_curvature(modelData, v_ego)
 
-    self.v_cruise = self.update_v_cruise(carState, controlsState, controlsState.enabled, liveLocationKalman, modelData, v_cruise, v_ego)
+    self.v_cruise = self.update_v_cruise(carState, controlsState, controlsState.enabled, frogpilotCarState, liveLocationKalman, modelData, v_cruise, v_ego)
 
   def update_follow_values(self, jerk, lead_one, t_follow, trafficModeActive, v_ego, v_lead):
     if trafficModeActive:
@@ -175,7 +180,7 @@ class FrogPilotPlanner:
 
     return jerk, t_follow
 
-  def update_v_cruise(self, carState, controlsState, enabled, liveLocationKalman, modelData, v_cruise, v_ego):
+  def update_v_cruise(self, carState, controlsState, enabled, frogpilotCarState, liveLocationKalman, modelData, v_cruise, v_ego):
     gps_check = (liveLocationKalman.status == log.LiveLocationKalman.Status.valid) and liveLocationKalman.positionGeodetic.valid and liveLocationKalman.gpsOK
 
     v_cruise_cluster = max(controlsState.vCruiseCluster, controlsState.vCruise) * CV.KPH_TO_MS
@@ -198,7 +203,7 @@ class FrogPilotPlanner:
 
     # Pfeiferj's Speed Limit Controller
     if FrogPilotToggles.speed_limit_controller:
-      SpeedLimitController.update(v_ego)
+      SpeedLimitController.update(frogpilotCarState.dashboardSpeedLimit, v_ego)
       unconfirmed_slc_target = SpeedLimitController.desired_speed_limit
 
       # Check if the new speed limit has been confirmed by the user

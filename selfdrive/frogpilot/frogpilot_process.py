@@ -68,7 +68,7 @@ def frogpilot_thread():
   time_validated = system_time_valid()
 
   pm = messaging.PubMaster(['frogpilotPlan'])
-  sm = messaging.SubMaster(['carState', 'controlsState', 'deviceState', 'frogpilotCarControl', 'frogpilotNavigation',
+  sm = messaging.SubMaster(['carState', 'controlsState', 'deviceState', 'frogpilotCarControl', 'frogpilotCarState', 'frogpilotNavigation',
                             'frogpilotPlan', 'liveLocationKalman', 'longitudinalPlan', 'modelV2', 'radarState'],
                            poll='modelV2', ignore_avg_freq=['radarState'])
 
@@ -86,8 +86,8 @@ def frogpilot_thread():
           FrogPilotVariables.update_frogpilot_params(started)
 
       if sm.updated['modelV2']:
-        frogpilot_planner.update(sm['carState'], sm['controlsState'], sm['frogpilotCarControl'], sm['frogpilotNavigation'],
-                                 sm['liveLocationKalman'], sm['modelV2'], sm['radarState'])
+        frogpilot_planner.update(sm['carState'], sm['controlsState'], sm['frogpilotCarControl'], sm['frogpilotCarState'],
+                                 sm['frogpilotNavigation'], sm['liveLocationKalman'], sm['modelV2'], sm['radarState'])
         frogpilot_planner.publish(sm, pm)
 
     if params_memory.get("ModelToDownload", encoding='utf-8') is not None and github_pinged():

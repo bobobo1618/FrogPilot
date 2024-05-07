@@ -1,4 +1,4 @@
-from cereal import car
+from cereal import car, custom
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from openpilot.common.conversions import Conversions as CV
@@ -24,6 +24,7 @@ class CarState(CarStateBase):
 
   def update(self, cp, cp_cam, frogpilot_variables):
     ret = car.CarState.new_message()
+    fp_ret = custom.FrogPilotCarState.new_message()
 
     # Occasionally on startup, the ABS module recalibrates the steering pinion offset, so we need to block engagement
     # The vehicle usually recovers out of this state within a minute of normal driving
@@ -109,7 +110,7 @@ class CarState(CarStateBase):
     self.lkas_previously_enabled = self.lkas_enabled
     self.lkas_enabled = bool(cp.vl["Steering_Data_FD1"]["TjaButtnOnOffPress"])
 
-    return ret
+    return ret, fp_ret
 
   @staticmethod
   def get_can_parser(CP):
