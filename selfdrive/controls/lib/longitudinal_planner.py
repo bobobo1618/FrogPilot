@@ -6,7 +6,6 @@ from openpilot.common.numpy_fast import clip, interp
 import cereal.messaging as messaging
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.common.params import Params
 from openpilot.common.simple_kalman import KF1D
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.swaglog import cloudlog
@@ -18,7 +17,7 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, CONTROL_N, get_speed_error
 from openpilot.system.version import get_short_branch
 
-from openpilot.selfdrive.frogpilot.controls.lib.model_manager import RADARLESS_MODELS
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
 
 LON_MPC_STEP = 0.2  # first step is 0.2s
 A_CRUISE_MIN = -1.2
@@ -137,16 +136,6 @@ class LongitudinalPlanner:
     self.j_desired_trajectory = np.zeros(CONTROL_N)
     self.solverExecutionTime = 0.0
 
-    # FrogPilot variables
-    self.params = Params()
-    self.params_memory = Params("/dev/shm/params")
-
-    self.radarless_model = self.params.get("Model", block=True, encoding='utf-8') in RADARLESS_MODELS
-
-    self.release = get_short_branch() == "FrogPilot"
-
-    self.update_frogpilot_params()
-
   @staticmethod
   def parse_model(model_msg, model_error, v_ego, taco_tune):
     if (len(model_msg.position.x) == 33 and
@@ -208,7 +197,7 @@ class LongitudinalPlanner:
     accel_limits_turns[0] = min(accel_limits_turns[0], self.a_desired + 0.05)
     accel_limits_turns[1] = max(accel_limits_turns[1], self.a_desired - 0.05)
 
-    if self.radarless_model:
+    if FrogPilotToggles.radarless_model:
       model_leads = list(sm['modelV2'].leadsV3)
       # TODO lead state should be invalidated if its different point than the previous one
       lead_states = [self.lead_one, self.lead_two]
@@ -225,8 +214,8 @@ class LongitudinalPlanner:
     self.mpc.set_weights(sm['frogpilotPlan'].jerk, prev_accel_constraint, personality=sm['controlsState'].personality)
     self.mpc.set_accel_limits(accel_limits_turns[0], accel_limits_turns[1])
     self.mpc.set_cur_state(self.v_desired_filter.x, self.a_desired)
-    x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error, v_ego, self.taco_tune)
-    self.mpc.update(self.lead_one, self.lead_two, sm['frogpilotPlan'].vCruise, x, v, a, j, self.radarless_model, sm['frogpilotPlan'].tFollow,
+    x, v, a, j = self.parse_model(sm['modelV2'], self.v_model_error, v_ego, FrogPilotToggles.taco_tune)
+    self.mpc.update(self.lead_one, self.lead_two, sm['frogpilotPlan'].vCruise, x, v, a, j, FrogPilotToggles.radarless_model, sm['frogpilotPlan'].tFollow,
                     sm['frogpilotCarControl'].trafficModeActive, personality=sm['controlsState'].personality)
 
     self.v_desired_trajectory_full = np.interp(ModelConstants.T_IDXS, T_IDXS_MPC, self.mpc.v_solution)
@@ -244,13 +233,6 @@ class LongitudinalPlanner:
     a_prev = self.a_desired
     self.a_desired = float(interp(self.dt, ModelConstants.T_IDXS[:CONTROL_N], self.a_desired_trajectory))
     self.v_desired_filter.x = self.v_desired_filter.x + self.dt * (self.a_desired + a_prev) / 2.0
-
-    if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
-      self.update_frogpilot_params()
-
-  def update_frogpilot_params(self):
-    lateral_tune = self.params.get_bool("LateralTune")
-    self.taco_tune = lateral_tune and self.params.get_bool("TacoTune")
 
   def publish(self, sm, pm):
     plan_send = messaging.new_message('longitudinalPlan')

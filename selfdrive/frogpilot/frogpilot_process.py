@@ -16,6 +16,7 @@ from openpilot.system.hardware import HARDWARE
 
 from openpilot.selfdrive.frogpilot.controls.frogpilot_planner import FrogPilotPlanner
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_functions import FrogPilotFunctions
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotVariables
 from openpilot.selfdrive.frogpilot.controls.lib.model_manager import DEFAULT_MODEL, DEFAULT_MODEL_NAME, download_model, populate_models
 from openpilot.selfdrive.frogpilot.controls.lib.theme_manager import ThemeManager
 
@@ -82,7 +83,7 @@ def frogpilot_thread():
         with car.CarParams.from_bytes(params.get("CarParams", block=True)) as msg:
           CP = msg
           frogpilot_planner = FrogPilotPlanner(CP)
-          frogpilot_planner.update_frogpilot_params()
+          FrogPilotVariables.update_frogpilot_params(started)
 
       if sm.updated['modelV2']:
         frogpilot_planner.update(sm['carState'], sm['controlsState'], sm['frogpilotCarControl'], sm['frogpilotNavigation'],
@@ -99,10 +100,10 @@ def frogpilot_thread():
         params.put("Model", DEFAULT_MODEL)
         params.put("ModelName", DEFAULT_MODEL_NAME)
 
-      if started:
-        frogpilot_planner.update_frogpilot_params()
-      else:
+      if not started:
         frogpilot_functions.backup_toggles()
+
+      FrogPilotVariables.update_frogpilot_params(started)
 
     if not time_validated:
       time_validated = system_time_valid()

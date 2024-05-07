@@ -5,7 +5,6 @@ import numpy as np
 from cereal import log
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip
-from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 # WARNING: imports outside of constants will not trigger a rebuild
 from openpilot.selfdrive.modeld.constants import index_function
@@ -17,6 +16,8 @@ else:
   from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.c_generated_code.acados_ocp_solver_pyx import AcadosOcpSolverCython
 
 from casadi import SX, vertcat
+
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
 
 MODEL_NAME = 'long'
 LONG_MPC_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -243,11 +244,6 @@ def gen_long_ocp():
 
 class LongitudinalMpc:
   def __init__(self, mode='acc'):
-    # FrogPilot variables
-    self.params_memory = Params("/dev/shm/params")
-
-    self.update_frogpilot_params()
-
     self.mode = mode
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.reset()
@@ -362,7 +358,7 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     self.status = lead_one.status or lead_two.status
 
-    increase_distance = max(self.increased_stopping_distance - v_ego if not trafficModeActive else 0, 0)
+    increase_distance = FrogPilotToggles.increased_stopping_distance if not trafficModeActive else 0
     lead_xv_0 = self.process_lead(lead_one, increase_distance)
     lead_xv_1 = self.process_lead(lead_two)
 
@@ -438,9 +434,6 @@ class LongitudinalMpc:
          (lead_1_obstacle[0] - lead_0_obstacle[0]):
         self.source = 'lead1'
 
-    if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
-      self.update_frogpilot_params()
-
   def run(self):
     # t0 = time.monotonic()
     # reset = 0
@@ -482,14 +475,6 @@ class LongitudinalMpc:
       # reset = 1
     # print(f"long_mpc timings: total internal {self.solve_time:.2e}, external: {(time.monotonic() - t0):.2e} qp {self.time_qp_solution:.2e}, \
     # lin {self.time_linearization:.2e} qp_iter {qp_iter}, reset {reset}")
-
-  def update_frogpilot_params(self):
-    params = Params()
-
-    is_metric = params.get_bool("IsMetric")
-
-    longitudinal_tune = params.get_bool("LongitudinalTune")
-    self.increased_stopping_distance = params.get_int("StoppingDistance") * (1 if is_metric else CV.FOOT_TO_METER) if longitudinal_tune else 0
 
 if __name__ == "__main__":
   ocp = gen_long_ocp()

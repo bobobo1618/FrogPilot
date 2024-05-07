@@ -22,6 +22,8 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.lib.alertmanager import set_offroad_alert
 from openpilot.system.version import is_tested_branch
 
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
+
 LOCK_FILE = os.getenv("UPDATER_LOCK_FILE", "/tmp/safe_staging_overlay.lock")
 STAGING_ROOT = os.getenv("UPDATER_STAGING_ROOT", "/data/safe_staging")
 
@@ -237,9 +239,6 @@ class Updater:
     self.branches = defaultdict(str)
     self._has_internet: bool = False
 
-    # FrogPilot variables
-    self.offline_mode = self.params.get_bool("DeviceManagement") and self.params.get_bool("OfflineMode")
-
   @property
   def has_internet(self) -> bool:
     return self._has_internet
@@ -330,7 +329,7 @@ class Updater:
       set_offroad_alert(alert, False)
 
     now = datetime.datetime.utcnow()
-    if self.offline_mode:
+    if FrogPilotToggles.offline_mode:
       last_update = now
     dt = now - last_update
     if failed_count > 15 and exception is not None and self.has_internet:

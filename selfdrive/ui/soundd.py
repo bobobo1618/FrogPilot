@@ -15,6 +15,8 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.system import micd
 
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
+
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
@@ -223,18 +225,11 @@ class Soundd:
       AudibleAlert.goat: self.params.get_int("PromptVolume"),
     }
 
-    custom_theme = self.params.get_bool("CustomTheme")
-    custom_sounds = self.params.get_int("CustomSounds") if custom_theme else 0
-    self.goat_scream = custom_sounds == 1 and self.params.get_bool("GoatScream")
-
     theme_configuration = {
       1: "frog_theme",
       2: "tesla_theme",
       3: "stalin_theme"
     }
-
-    holiday_themes = custom_theme and self.params.get_bool("HolidayThemes")
-    current_holiday_theme = self.params_memory.get_int("CurrentHolidayTheme") if holiday_themes else 0
 
     holiday_theme_configuration = {
       1: "april_fools",
@@ -250,13 +245,14 @@ class Soundd:
       11: "world_frog_day",
     }
 
-    if current_holiday_theme != 0:
-      theme_name = holiday_theme_configuration.get(current_holiday_theme)
+    if FrogPilotToggles.current_holiday_theme != 0:
+      theme_name = holiday_theme_configuration.get(FrogPilotToggles.current_holiday_theme)
       self.sound_directory = BASEDIR + ("/selfdrive/frogpilot/assets/holiday_themes/" + theme_name + "/sounds/")
       self.goat_scream = False
     else:
-      theme_name = theme_configuration.get(custom_sounds)
-      self.sound_directory = BASEDIR + ("/selfdrive/frogpilot/assets/custom_themes/" + theme_name + "/sounds/" if custom_sounds != 0 else "/selfdrive/assets/sounds/")
+      theme_name = theme_configuration.get(FrogPilotToggles.custom_sounds)
+      self.sound_directory = BASEDIR + ("/selfdrive/frogpilot/assets/custom_themes/" + theme_name + "/sounds/" if FrogPilotToggles.custom_sounds != 0 else "/selfdrive/assets/sounds/")
+      self.goat_scream = FrogPilotToggles.goat_scream
 
     if self.sound_directory != self.previous_sound_directory:
       self.load_sounds()

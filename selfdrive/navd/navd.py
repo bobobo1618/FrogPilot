@@ -18,6 +18,8 @@ from openpilot.selfdrive.navd.helpers import (Coordinate, coordinate_from_param,
                                     parse_banner_instructions)
 from openpilot.common.swaglog import cloudlog
 
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
+
 REROUTE_DISTANCE = 25
 MANEUVER_TRANSITION_THRESHOLD = 10
 REROUTE_COUNTER_MIN = 3
@@ -71,8 +73,6 @@ class RouteEngine:
     self.approaching_intersection = False
     self.approaching_turn = False
 
-    self.update_frogpilot_params()
-
   def update(self):
     self.sm.update(0)
 
@@ -90,10 +90,6 @@ class RouteEngine:
       self.send_instruction()
     except Exception:
       cloudlog.exception("navd.failed_to_compute")
-
-    # Update FrogPilot parameters
-    if self.params_memory.get_bool("FrogPilotTogglesUpdated"):
-      self.update_frogpilot_params()
 
   def update_location(self):
     location = self.sm['liveLocationKalman']
@@ -216,7 +212,7 @@ class RouteEngine:
         self.route_geometry = []
 
         # Iterate through the steps in self.route to find "stop_sign" and "traffic_light"
-        if self.conditional_navigation_intersections:
+        if FrogPilotToggles.conditional_navigation_intersections:
           self.stop_signal = []
           self.stop_coord = []
 
@@ -378,7 +374,7 @@ class RouteEngine:
           self.clear_route()
 
     # 5-10 Seconds to stop condition based on the current speed or minimum of 25 meters
-    if self.conditional_navigation:
+    if FrogPilotToggles.conditional_navigation:
       v_ego = self.sm['carState'].vEgo
       seconds_to_stop = interp(v_ego, [0, 22.3, 44.7], [5, 10, 10])
 
@@ -390,12 +386,12 @@ class RouteEngine:
 
         # Calculate the distance to the stopSign or trafficLight
         distance_to_condition = self.last_position.distance_to(self.stop_coord[index])
-        self.approaching_intersection = self.conditional_navigation_intersections and distance_to_condition < max((seconds_to_stop * v_ego), 25)
+        self.approaching_intersection = FrogPilotToggles.conditional_navigation_intersections and distance_to_condition < max((seconds_to_stop * v_ego), 25)
       else:
         self.approaching_intersection = False  # No more stopSign or trafficLight in array
 
       # Determine if NoO distance to maneuver is upcoming
-      self.approaching_turn = self.conditional_navigation_turns and distance_to_maneuver_along_geometry < max((seconds_to_stop * v_ego), 25)
+      self.approaching_turn = FrogPilotToggles.conditional_navigation_turns and distance_to_maneuver_along_geometry < max((seconds_to_stop * v_ego), 25)
     else:
       self.approaching_intersection = False
       self.approaching_turn = False
@@ -455,11 +451,6 @@ class RouteEngine:
       self.reroute_counter = 0
     return self.reroute_counter > REROUTE_COUNTER_MIN
     # TODO: Check for going wrong way in segment
-
-  def update_frogpilot_params(self):
-    self.conditional_navigation = self.params.get_bool("CENavigation")
-    self.conditional_navigation_intersections = self.conditional_navigation and self.params.get_bool("CENavigationIntersections")
-    self.conditional_navigation_turns = self.conditional_navigation and self.params.get_bool("CENavigationTurns")
 
 def main():
   pm = messaging.PubMaster(['navInstruction', 'navRoute', 'frogpilotNavigation'])
