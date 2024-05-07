@@ -214,6 +214,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"AdjacentPath", PERSISTENT},
     {"AdjacentPathMetrics", PERSISTENT},
     {"AggressiveAcceleration", PERSISTENT},
+    {"AggressiveAccelerationExperimental", PERSISTENT},
     {"AggressiveFollow", PERSISTENT},
     {"AggressiveJerk", PERSISTENT},
     {"AlertVolumeControl", PERSISTENT},

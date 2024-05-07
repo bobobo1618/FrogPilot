@@ -354,6 +354,17 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
           tr("I understand the risks."), this);
         }
       });
+    } else if (param == "AggressiveAcceleration") {
+      std::vector<QString> accelerationToggles{"AggressiveAccelerationExperimental"};
+      std::vector<QString> accelerationToggleNames{tr("Experimental")};
+      toggle = new FrogPilotParamToggleControl(param, title, desc, icon, accelerationToggles, accelerationToggleNames);
+      QObject::connect(static_cast<FrogPilotParamToggleControl*>(toggle), &FrogPilotParamToggleControl::buttonClicked, [this](bool checked) {
+        if (checked) {
+          FrogPilotConfirmationDialog::toggleAlert(
+          tr("WARNING: This is very experimental and may cause the car to not brake or stop safely! Please report any issues in the FrogPilot Discord!"),
+          tr("I understand the risks."), this);
+        }
+      });
     } else if (param == "DecelerationProfile") {
       std::vector<QString> profileOptions{tr("Standard"), tr("Eco"), tr("Sport")};
       FrogPilotButtonParamControl *profileSelection = new FrogPilotButtonParamControl(param, title, desc, icon, profileOptions);

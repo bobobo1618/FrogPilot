@@ -96,6 +96,7 @@ def manager_init(frogpilot_functions) -> None:
     ("AdjacentPath", "0"),
     ("AdjacentPathMetrics", "0"),
     ("AggressiveAcceleration", "1"),
+    ("AggressiveAccelerationExperimental", "0"),
     ("AggressiveFollow", "1.25"),
     ("AggressiveJerk", "0.5"),
     ("AlertVolumeControl", "0"),
