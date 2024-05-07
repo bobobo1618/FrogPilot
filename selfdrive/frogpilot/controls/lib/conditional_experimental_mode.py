@@ -125,12 +125,8 @@ class ConditionalExperimentalMode:
   def road_curvature(self, road_curvature):
     lead_check = FrogPilotToggles.conditional_curves_lead or not self.lead_detected
 
-    if lead_check and not self.red_light_detected:
-      # Setting a limit of 3.5 helps prevent it triggering for red lights
-      curve_detected = 3.5 >= road_curvature > 1.6
-      curve_active = 3.5 >= road_curvature > 1.1 and self.curve_detected
-
-      self.curvature_mac.add_data(curve_detected or curve_active)
+    if lead_check and v_ego > CRUISING_SPEED:
+      self.curvature_mac.add_data((1.9 / road_curvature)**0.5 < v_ego)
       self.curve_detected = self.curvature_mac.get_moving_average() >= PROBABILITY
     else:
       self.curvature_mac.reset_data()

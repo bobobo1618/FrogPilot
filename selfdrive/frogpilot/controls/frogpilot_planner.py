@@ -236,14 +236,10 @@ class FrogPilotPlanner:
 
     # Pfeiferj's Vision Turn Controller
     if FrogPilotToggles.vision_turn_controller and v_ego > CRUISING_SPEED and enabled:
-      orientation_rate = np.array(np.abs(modelData.orientationRate.z)) * FrogPilotToggles.curve_sensitivity
-      velocity = np.array(modelData.velocity.x)
-
-      max_pred_lat_acc = np.amax(orientation_rate * velocity)
-      max_curve = max_pred_lat_acc / (v_ego**2)
+      adjusted_road_curvature = self.road_curvature * FrogPilotToggles.curve_sensitivity
       adjusted_target_lat_a = TARGET_LAT_A * FrogPilotToggles.turn_aggressiveness
 
-      self.vtsc_target = (adjusted_target_lat_a / max_curve)**0.5
+      self.vtsc_target = (adjusted_target_lat_a / adjusted_road_curvature)**0.5
       self.vtsc_target = np.clip(self.vtsc_target, CRUISING_SPEED, v_cruise)
     else:
       self.vtsc_target = v_cruise

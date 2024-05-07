@@ -33,9 +33,10 @@ def calculate_lane_width(lane, current_lane, road_edge):
   return min(distance_to_lane, distance_to_road_edge)
 
 def calculate_road_curvature(modelData, v_ego):
-  predicted_velocities = np.array(modelData.velocity.x)
-  curvature_ratios = np.abs(np.array(modelData.acceleration.y)) / (predicted_velocities**2)
-  return np.amax(curvature_ratios * (v_ego**2))
+  orientation_rate = np.array(np.abs(modelData.orientationRate.z))
+  velocity = np.array(modelData.velocity.x)
+  max_pred_lat_acc = np.amax(orientation_rate * velocity)
+  return max_pred_lat_acc / (v_ego**2)
 
 class MovingAverageCalculator:
   def __init__(self):
