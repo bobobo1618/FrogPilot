@@ -36,7 +36,7 @@ from openpilot.system.version import get_short_branch
 
 from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_functions import CRUISING_SPEED, PROBABILITY, MovingAverageCalculator
 
-from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
+from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotVariables
 from openpilot.selfdrive.frogpilot.controls.lib.speed_limit_controller import SpeedLimitController
 
 SOFT_DISABLE_TIME = 3  # seconds
@@ -70,6 +70,8 @@ ENABLED_STATES = (State.preEnabled, *ACTIVE_STATES)
 
 class Controls:
   def __init__(self, CI=None):
+    self.frogpilot_toggles = FrogPilotVariables.toggles
+
     self.card = CarD(CI)
 
     self.params = Params()
@@ -97,7 +99,7 @@ class Controls:
     ignore = self.sensor_packets + ['testJoystick']
     if SIMULATION:
       ignore += ['driverCameraState', 'managerState']
-    if FrogPilotToggles.radarless_model:
+    if self.frogpilot_toggles.radarless_model:
       ignore += ['radarState']
     self.sm = messaging.SubMaster(['deviceState', 'pandaStates', 'peripheralState', 'modelV2', 'liveCalibration',
                                    'carOutput', 'driverMonitoringState', 'longitudinalPlan', 'liveLocationKalman',
@@ -266,7 +268,7 @@ class Controls:
 
     # Create events for temperature, disk space, and memory
     if self.sm['deviceState'].thermalStatus >= ThermalStatus.red:
-      if not FrogPilotToggles.increase_thermal_limits or self.sm['deviceState'].thermalStatus == ThermalStatus.danger:
+      if not self.frogpilot_toggles.increase_thermal_limits or self.sm['deviceState'].thermalStatus == ThermalStatus.danger:
         self.events.add(EventName.overheat)
     if self.sm['deviceState'].freeSpacePercent < 7 and not SIMULATION:
       # under 7% of space free no enable allowed
@@ -306,18 +308,18 @@ class Controls:
       direction = self.sm['modelV2'].meta.laneChangeDirection
       if (CS.leftBlindspot and direction == LaneChangeDirection.left) or \
          (CS.rightBlindspot and direction == LaneChangeDirection.right):
-        if FrogPilotToggles.loud_blindspot_alert:
+        if self.frogpilot_toggles.loud_blindspot_alert:
           self.events.add(EventName.laneChangeBlockedLoud)
         else:
           self.events.add(EventName.laneChangeBlocked)
       else:
         if direction == LaneChangeDirection.left:
-          if self.sm['frogpilotPlan'].laneWidthLeft >= FrogPilotToggles.lane_detection_width:
+          if self.sm['frogpilotPlan'].laneWidthLeft >= self.frogpilot_toggles.lane_detection_width:
             self.events.add(EventName.preLaneChangeLeft)
           else:
             self.events.add(EventName.noLaneAvailable)
         else:
-          if self.sm['frogpilotPlan'].laneWidthRight >= FrogPilotToggles.lane_detection_width:
+          if self.sm['frogpilotPlan'].laneWidthRight >= self.frogpilot_toggles.lane_detection_width:
             self.events.add(EventName.preLaneChangeRight)
           else:
             self.events.add(EventName.noLaneAvailable)
@@ -360,7 +362,7 @@ class Controls:
           self.events.add(EventName.cameraFrameRate)
     if not REPLAY and self.rk.lagging:
       self.events.add(EventName.controlsdLagging)
-    if not FrogPilotToggles.radarless_model:
+    if not self.frogpilot_toggles.radarless_model:
       if len(self.sm['radarState'].radarErrors) or (not self.rk.lagging and not self.sm.all_checks(['radarState'])):
         self.events.add(EventName.radarFault)
     if not self.sm.valid['pandaStates']:
@@ -421,7 +423,7 @@ class Controls:
     if planner_fcw or model_fcw:
       self.events.add(EventName.fcw)
       self.fcw_random_event_triggered = True
-    elif self.fcw_random_event_triggered and FrogPilotToggles.random_events:
+    elif self.fcw_random_event_triggered and self.frogpilot_toggles.random_events:
       self.events.add(EventName.yourFrogTriedToKillMe)
       self.fcw_random_event_triggered = False
 
@@ -453,7 +455,7 @@ class Controls:
   def data_sample(self):
     """Receive data from sockets and update carState"""
 
-    CS = self.card.state_update(FrogPilotToggles)
+    CS = self.card.state_update(self.frogpilot_toggles)
 
     self.sm.update(0)
 
@@ -502,7 +504,7 @@ class Controls:
   def state_transition(self, CS):
     """Compute conditional state transitions and execute actions on state transitions"""
 
-    self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric, self.FPCC.speedLimitChanged, FrogPilotToggles)
+    self.v_cruise_helper.update_v_cruise(CS, self.enabled, self.is_metric, self.FPCC.speedLimitChanged, self.frogpilot_toggles)
 
     # decrement the soft disable timer at every step, as it's reset on
     # entrance in SOFT_DISABLING state
@@ -577,7 +579,7 @@ class Controls:
           else:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
-          self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.sm['frogpilotPlan'].unconfirmedSlcSpeedLimit, FrogPilotToggles)
+          self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.sm['frogpilotPlan'].unconfirmedSlcSpeedLimit, self.frogpilot_toggles)
 
     # Check if openpilot is engaged and actuators are enabled
     self.enabled = self.state in ENABLED_STATES
@@ -594,13 +596,13 @@ class Controls:
     # Update VehicleModel
     lp = self.sm['liveParameters']
     x = max(lp.stiffnessFactor, 0.1)
-    sr = max(FrogPilotToggles.steer_ratio, 0.1) if FrogPilotToggles.use_custom_steer_ratio else max(lp.steerRatio, 0.1)
+    sr = max(self.frogpilot_toggles.steer_ratio, 0.1) if self.frogpilot_toggles.use_custom_steer_ratio else max(lp.steerRatio, 0.1)
     self.VM.update_params(x, sr)
 
     # Update Torque Params
     if self.CP.lateralTuning.which() == 'torque':
       torque_params = self.sm['liveTorqueParameters']
-      if self.sm.all_checks(['liveTorqueParameters']) and (torque_params.useParams or FrogPilotToggles.force_auto_tune):
+      if self.sm.all_checks(['liveTorqueParameters']) and (torque_params.useParams or self.frogpilot_toggles.force_auto_tune):
         self.LaC.update_live_torque_params(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
                                            torque_params.frictionCoefficientFiltered)
 
@@ -636,7 +638,7 @@ class Controls:
 
     if not self.joystick_mode:
       # accel PID loop
-      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS, FrogPilotToggles)
+      pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, self.v_cruise_helper.v_cruise_kph * CV.KPH_TO_MS, self.frogpilot_toggles)
       t_since_plan = (self.sm.frame - self.sm.recv_frame['longitudinalPlan']) * DT_CTRL
       actuators.accel = self.LoC.update(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan)
 
@@ -686,7 +688,7 @@ class Controls:
         max_torque = abs(actuators.steer) > 0.99
         if undershooting and turning and good_speed and max_torque and not self.random_event_triggered:
           event_choices = [1, 2]
-          if self.sm.frame % (10000 // len(event_choices)) == 0 and FrogPilotToggles.random_events:
+          if self.sm.frame % (10000 // len(event_choices)) == 0 and self.frogpilot_toggles.random_events:
             event_choice = random.choice(event_choices)
             if event_choice == 1:
               lac_log.active and self.events.add(EventName.firefoxSteerSaturated)
@@ -695,7 +697,7 @@ class Controls:
               lac_log.active and self.events.add(EventName.goatSteerSaturated)
             self.random_event_triggered = True
           else:
-            lac_log.active and self.events.add(EventName.goatSteerSaturated if FrogPilotToggles.goat_scream else EventName.steerSaturated)
+            lac_log.active and self.events.add(EventName.goatSteerSaturated if self.frogpilot_toggles.goat_scream else EventName.steerSaturated)
       elif lac_log.saturated:
         # TODO probably should not use dpath_points but curvature
         dpath_points = model_v2.position.y
@@ -801,7 +803,7 @@ class Controls:
       hudControl.visualAlert = current_alert.visual_alert
 
     if not self.CP.passive and self.initialized:
-      self.card.controls_update(CC, FrogPilotToggles)
+      self.card.controls_update(CC, self.frogpilot_toggles)
       if self.CP.steerControlType == car.CarParams.SteerControlType.angle:
         self.steer_limited = abs(CC.actuators.steeringAngleDeg - CO.actuatorsOutput.steeringAngleDeg) > \
                              STEER_ANGLE_SATURATION_THRESHOLD
@@ -915,12 +917,16 @@ class Controls:
   def params_thread(self, evt):
     while not evt.is_set():
       self.is_metric = self.params.get_bool("IsMetric")
-      if self.CP.openpilotLongitudinalControl and not FrogPilotToggles.conditional_experimental_mode:
-        self.experimental_mode = self.params.get_bool("ExperimentalMode") or FrogPilotToggles.speed_limit_controller and SpeedLimitController.experimental_mode
+      if self.CP.openpilotLongitudinalControl and not self.frogpilot_toggles.conditional_experimental_mode:
+        self.experimental_mode = self.params.get_bool("ExperimentalMode") or self.frogpilot_toggles.speed_limit_controller and SpeedLimitController.experimental_mode
       self.personality = self.read_personality_param()
       if self.CP.notCar:
         self.joystick_mode = self.params.get_bool("JoystickDebugMode")
       time.sleep(0.1)
+
+      if FrogPilotVariables.toggles_updated:
+        FrogPilotVariables.update_frogpilot_params(True)
+        self.frogpilot_toggles = FrogPilotVariables.toggles
 
   def controlsd_thread(self):
     e = threading.Event()
@@ -939,7 +945,7 @@ class Controls:
       self.events.add(EventName.blockUser)
       return
 
-    if FrogPilotToggles.random_events:
+    if self.frogpilot_toggles.random_events:
       acceleration = CS.aEgo
 
       if not CS.gasPressed:
@@ -965,7 +971,7 @@ class Controls:
         self.random_event_triggered = True
         self.max_acceleration = 0
 
-    if FrogPilotToggles.green_light_alert:
+    if self.frogpilot_toggles.green_light_alert:
       green_light = not self.sm['frogpilotPlan'].redLight
       green_light &= not CS.gasPressed
       green_light &= not self.sm['longitudinalPlan'].hasLead
@@ -976,11 +982,11 @@ class Controls:
       if self.green_light_mac.get_moving_average() >= PROBABILITY:
         self.events.add(EventName.greenLight)
 
-    if self.sm.frame >= 1000 and FrogPilotToggles.current_holiday_theme != 0 and not self.holiday_theme_alerted:
+    if self.sm.frame >= 1000 and self.frogpilot_toggles.current_holiday_theme != 0 and not self.holiday_theme_alerted:
       self.events.add(EventName.holidayActive)
       self.holiday_theme_alerted = True
 
-    if FrogPilotToggles.lead_departing_alert and self.sm.frame % 50 == 0:
+    if self.frogpilot_toggles.lead_departing_alert and self.sm.frame % 50 == 0:
       lead = self.sm['radarState'].leadOne
       lead_distance = lead.dRel
 
@@ -1001,14 +1007,14 @@ class Controls:
         self.events.add(EventName.turningRight)
 
     if os.path.isfile(os.path.join(sentry.CRASHES_DIR, 'error.txt')) and not self.openpilot_crashed_triggered:
-      if FrogPilotToggles.random_events:
+      if self.frogpilot_toggles.random_events:
         self.events.add(EventName.openpilotCrashedRandomEvents)
       else:
         self.events.add(EventName.openpilotCrashed)
 
       self.openpilot_crashed_triggered = True
 
-    if FrogPilotToggles.speed_limit_alert or FrogPilotToggles.speed_limit_confirmation:
+    if self.frogpilot_toggles.speed_limit_alert or self.frogpilot_toggles.speed_limit_confirmation:
       current_speed_limit = self.sm['frogpilotPlan'].slcSpeedLimit
       desired_speed_limit = self.sm['frogpilotPlan'].unconfirmedSlcSpeedLimit
 
@@ -1028,21 +1034,21 @@ class Controls:
           self.params_memory.put_bool("SLCConfirmedPressed", True)
 
       if speed_limit_changed_lower:
-        if FrogPilotToggles.speed_limit_confirmation_lower:
+        if self.frogpilot_toggles.speed_limit_confirmation_lower:
           self.FPCC.speedLimitChanged = True
         else:
           self.params_memory.put_bool("SLCConfirmed", True)
       elif speed_limit_changed_higher:
-        if FrogPilotToggles.speed_limit_confirmation_higher:
+        if self.frogpilot_toggles.speed_limit_confirmation_higher:
           self.FPCC.speedLimitChanged = True
         else:
           self.params_memory.put_bool("SLCConfirmed", True)
 
-      if self.params_memory.get_bool("SLCConfirmedPressed") or not FrogPilotToggles.speed_limit_confirmation:
+      if self.params_memory.get_bool("SLCConfirmedPressed") or not self.frogpilot_toggles.speed_limit_confirmation:
         self.FPCC.speedLimitChanged = False
         self.params_memory.put_bool("SLCConfirmedPressed", False)
 
-      if (speed_limit_changed_lower or speed_limit_changed_higher) and FrogPilotToggles.speed_limit_alert:
+      if (speed_limit_changed_lower or speed_limit_changed_higher) and self.frogpilot_toggles.speed_limit_alert:
         self.events.add(EventName.speedLimitChanged)
 
       if self.FPCC.speedLimitChanged:
@@ -1058,7 +1064,7 @@ class Controls:
     if self.sm.frame == 550 and self.CP.lateralTuning.which() == 'torque' and self.CI.use_nnff:
       self.events.add(EventName.torqueNNLoad)
 
-    if FrogPilotToggles.random_events:
+    if self.frogpilot_toggles.random_events:
       conversion = 1 if self.is_metric else CV.KPH_TO_MPH
       v_cruise = max(self.v_cruise_helper.v_cruise_cluster_kph, self.v_cruise_helper.v_cruise_kph) * conversion
 
@@ -1077,9 +1083,9 @@ class Controls:
     self.FPCC.alwaysOnLateral &= self.always_on_lateral
     self.FPCC.alwaysOnLateral &= self.driving_gear
     self.FPCC.alwaysOnLateral &= self.speed_check
-    self.FPCC.alwaysOnLateral &= not (CS.brakePressed and CS.vEgo < FrogPilotToggles.always_on_lateral_pause_speed) or CS.standstill
+    self.FPCC.alwaysOnLateral &= not (CS.brakePressed and CS.vEgo < self.frogpilot_toggles.always_on_lateral_pause_speed) or CS.standstill
 
-    if self.CP.openpilotLongitudinalControl and FrogPilotToggles.conditional_experimental_mode:
+    if self.CP.openpilotLongitudinalControl and self.frogpilot_toggles.conditional_experimental_mode:
       self.experimental_mode = self.sm['frogpilotPlan'].conditionalExperimental
 
     self.drive_distance += CS.vEgo * DT_CTRL
@@ -1112,8 +1118,8 @@ class Controls:
 
         self.drive_added = True
 
-    if any(be.pressed and be.type == FrogPilotButtonType.lkas for be in CS.buttonEvents) and FrogPilotToggles.experimental_mode_via_lkas:
-      if FrogPilotToggles.conditional_experimental_mode:
+    if any(be.pressed and be.type == FrogPilotButtonType.lkas for be in CS.buttonEvents) and self.frogpilot_toggles.experimental_mode_via_lkas:
+      if self.frogpilot_toggles.conditional_experimental_mode:
         conditional_status = self.params_memory.get_int("CEStatus")
         override_value = 0 if conditional_status in {1, 2, 3, 4, 5, 6} else 3 if conditional_status >= 7 else 4
         self.params_memory.put_int("CEStatus", override_value)
@@ -1130,10 +1136,10 @@ class Controls:
         self.random_event_timer = 0
         self.params_memory.remove("CurrentRandomEvent")
 
-    signal_check = CS.vEgo >= FrogPilotToggles.pause_lateral_below_speed or not (CS.leftBlinker or CS.rightBlinker) or CS.standstill
-    self.speed_check = CS.vEgo >= FrogPilotToggles.pause_lateral_below_speed or CS.standstill or signal_check and FrogPilotToggles.pause_lateral_below_signal
+    signal_check = CS.vEgo >= self.frogpilot_toggles.pause_lateral_below_speed or not (CS.leftBlinker or CS.rightBlinker) or CS.standstill
+    self.speed_check = CS.vEgo >= self.frogpilot_toggles.pause_lateral_below_speed or CS.standstill or signal_check and self.frogpilot_toggles.pause_lateral_below_signal
 
-    self.FPCC.trafficModeActive = FrogPilotToggles.traffic_mode and self.params_memory.get_bool("TrafficModeActive")
+    self.FPCC.trafficModeActive = self.frogpilot_toggles.traffic_mode and self.params_memory.get_bool("TrafficModeActive")
 
     fpcc_send = messaging.new_message('frogpilotCarControl')
     fpcc_send.valid = CS.canValid

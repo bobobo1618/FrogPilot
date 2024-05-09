@@ -17,8 +17,6 @@ else:
 
 from casadi import SX, vertcat
 
-from openpilot.selfdrive.frogpilot.controls.lib.frogpilot_variables import FrogPilotToggles
-
 MODEL_NAME = 'long'
 LONG_MPC_DIR = os.path.dirname(os.path.abspath(__file__))
 EXPORT_DIR = os.path.join(LONG_MPC_DIR, "c_generated_code")
@@ -325,8 +323,6 @@ class LongitudinalMpc:
 
   def process_lead(self, lead, increased_stopping_distance=0):
     v_ego = self.x0[1]
-    increased_stopping_distance = max(increased_stopping_distance - v_ego, 0)
-
     if lead is not None and lead.status:
       x_lead = lead.dRel - increased_stopping_distance
       v_lead = lead.vLead
@@ -354,11 +350,11 @@ class LongitudinalMpc:
     self.cruise_min_a = min_a
     self.max_a = max_a
 
-  def update(self, lead_one, lead_two, v_cruise, x, v, a, j, radarless_model, t_follow, trafficModeActive, personality=log.LongitudinalPersonality.standard):
+  def update(self, lead_one, lead_two, v_cruise, x, v, a, j, t_follow, trafficModeActive, frogpilot_toggles, personality=log.LongitudinalPersonality.standard):
     v_ego = self.x0[1]
     self.status = lead_one.status or lead_two.status
 
-    increase_distance = FrogPilotToggles.increased_stopping_distance if not trafficModeActive else 0
+    increase_distance = frogpilot_toggles.increased_stopping_distance if not trafficModeActive else 0
     lead_xv_0 = self.process_lead(lead_one, increase_distance)
     lead_xv_1 = self.process_lead(lead_two)
 
@@ -419,7 +415,7 @@ class LongitudinalMpc:
     self.params[:,4] = t_follow
 
     self.run()
-    lead_probability = lead_one.prob if radarless_model else lead_one.modelProb
+    lead_probability = lead_one.prob if frogpilot_toggles.radarless_model else lead_one.modelProb
     if (np.any(lead_xv_0[FCW_IDXS,0] - self.x_sol[FCW_IDXS,0] < CRASH_DISTANCE) and lead_probability > 0.9):
       self.crash_cnt += 1
     else:

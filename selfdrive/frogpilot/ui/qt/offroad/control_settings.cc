@@ -806,6 +806,22 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
     QObject::connect(static_cast<FrogPilotButtonParamControl*>(toggle), &FrogPilotButtonParamControl::buttonClicked, &updateFrogPilotToggles);
     QObject::connect(static_cast<FrogPilotParamValueControl*>(toggle), &FrogPilotParamValueControl::valueChanged, &updateFrogPilotToggles);
 
+    ParamWatcher *param_watcher = new ParamWatcher(this);
+    param_watcher->addParam("CESpeed");
+    param_watcher->addParam("CESpeedLead");
+    param_watcher->addParam("TrafficFollow");
+    param_watcher->addParam("TrafficJerk");
+    param_watcher->addParam("AggressiveFollow");
+    param_watcher->addParam("AggressiveJerk");
+    param_watcher->addParam("StandardFollow");
+    param_watcher->addParam("StandardJerk");
+    param_watcher->addParam("RelaxedFollow");
+    param_watcher->addParam("RelaxedJerk");
+
+    QObject::connect(param_watcher, &ParamWatcher::paramChanged, [=](const QString &param_name, const QString &param_value) {
+      updateFrogPilotToggles();
+    });
+
     QObject::connect(toggle, &AbstractControl::showDescriptionEvent, [this]() {
       update();
     });
@@ -862,9 +878,9 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(SettingsWindow *parent) : FrogPil
   steerRatioToggle = static_cast<FrogPilotParamValueToggleControl*>(toggles["SteerRatio"]);
 
   QObject::connect(steerRatioToggle, &FrogPilotParamValueToggleControl::buttonClicked, this, [this]() {
-    params.putFloatNonBlocking("SteerRatio", steerRatioStock);
-    params.putBoolNonBlocking("ResetSteerRatio", false);
-    update();
+    params.putFloat("SteerRatio", steerRatioStock);
+    params.putBool("ResetSteerRatio", false);
+    steerRatioToggle->refresh();
   });
 
   QObject::connect(parent, &SettingsWindow::closeParentToggle, this, &FrogPilotControlsPanel::hideToggles);

@@ -51,7 +51,7 @@ def time_checks(automatic_updates, deviceState, params):
     if automatic_updates and screen_off and wifi_connection:
       automatic_update_check(params)
 
-def frogpilot_thread():
+def frogpilot_thread(frogpilot_toggles):
   config_realtime_process(5, Priority.CTRL_LOW)
 
   params = Params()
@@ -62,7 +62,6 @@ def frogpilot_thread():
 
   CP = None
 
-  automatic_updates = params.get_bool("AutomaticUpdates")
   first_run = True
   model_list_empty = params.get("AvailableModelsNames", encoding='utf-8') is None
   time_validated = system_time_valid()
@@ -83,27 +82,25 @@ def frogpilot_thread():
         with car.CarParams.from_bytes(params.get("CarParams", block=True)) as msg:
           CP = msg
           frogpilot_planner = FrogPilotPlanner(CP)
-          FrogPilotVariables.update_frogpilot_params(started)
 
       if sm.updated['modelV2']:
         frogpilot_planner.update(sm['carState'], sm['controlsState'], sm['frogpilotCarControl'], sm['frogpilotCarState'],
-                                 sm['frogpilotNavigation'], sm['liveLocationKalman'], sm['modelV2'], sm['radarState'])
-        frogpilot_planner.publish(sm, pm)
+                                 sm['frogpilotNavigation'], sm['liveLocationKalman'], sm['modelV2'], sm['radarState'], frogpilot_toggles)
+        frogpilot_planner.publish(sm, pm, frogpilot_toggles)
 
     if params_memory.get("ModelToDownload", encoding='utf-8') is not None and github_pinged():
       download_model()
 
-    if params_memory.get_bool("FrogPilotTogglesUpdated"):
-      automatic_updates = params.get_bool("AutomaticUpdates")
+    if FrogPilotVariables.toggles_updated:
+      FrogPilotVariables.update_frogpilot_params(started)
+      frogpilot_toggles = FrogPilotVariables.toggles
 
-      if not params.get_bool("ModelSelector"):
+      if not frogpilot_toggles.model_selector:
         params.put("Model", DEFAULT_MODEL)
         params.put("ModelName", DEFAULT_MODEL_NAME)
 
       if not started:
         frogpilot_functions.backup_toggles()
-
-      FrogPilotVariables.update_frogpilot_params(started)
 
     if not time_validated:
       time_validated = system_time_valid()
@@ -112,7 +109,7 @@ def frogpilot_thread():
 
     if datetime.datetime.now().second == 0 or first_run or model_list_empty or params_memory.get_bool("ManualUpdateInitiated"):
       if not started or model_list_empty:
-        time_checks(automatic_updates, deviceState, params)
+        time_checks(frogpilot_toggles.automatic_updates, deviceState, params)
         model_list_empty = params.get("AvailableModelsNames", encoding='utf-8') is None
 
       theme_manager.update_holiday()
@@ -122,7 +119,7 @@ def frogpilot_thread():
     time.sleep(DT_MDL)
 
 def main():
-  frogpilot_thread()
+  frogpilot_thread(FrogPilotVariables.toggles)
 
 if __name__ == "__main__":
   main()
